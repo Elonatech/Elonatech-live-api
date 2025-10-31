@@ -1,5 +1,5 @@
 const Product = require("../model/productModel");
-const RecentlyViewed = require("../model/recentlyViewesModel");
+const RecentlyViewed = require("../model/recentlyviewesModel");
 const generateMetaHtml = require('../utils/generateMetaHtml');
 const mongoose = require("mongoose");
 
