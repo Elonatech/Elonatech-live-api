@@ -27,13 +27,16 @@ app.use(express.urlencoded({ extended: "true" }));
 app.use(
   cors({
     origin: [
+      "http://localhost:3001",
       "https://elonatech-official-website.vercel.app",
-      "https://elonatech.com.ng"
+      "https://elonatech.com.ng",
+      "http://localhost:3000"
     ],
-    credentials: "",
+    credentials: true,
     methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"]
   })
 );
+
 
 // DATABASE
 connectMongodb();
