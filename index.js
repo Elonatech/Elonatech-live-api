@@ -26,7 +26,11 @@ app.use(express.urlencoded({ extended: "true" }));
 // CORS
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "https://elonatech-official-website.vercel.app",
+      "http://localhost:3000",
+      "https://elonatech.com.ng"
+    ],
     credentials: "",
     methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"]
   })
