@@ -3,7 +3,7 @@ const router = express.Router();
 const productController = require("../controller/productController");
 const upload = require('../lib/multer');
 
-router.post("/create", upload.array('images'), productController.createProduct);
+router.post("/create",  productController.createProduct);
 router.get("/", productController.getAllProducts);
 router.get("/computers", productController.getComputers);
 router.get("/filter", productController.getProductsByFilter);
@@ -20,3 +20,5 @@ router.get("/products/recently-viewed", productController.getRecentlyViewedProdu
 
 
 module.exports = router;
+
+// upload.array('images'),

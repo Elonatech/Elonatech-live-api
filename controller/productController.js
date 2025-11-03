@@ -18,7 +18,7 @@ const createProduct = async (req, res, next) => {
       brand,
       quantity,
       category,
-      // images,
+      images,
       computerProperty
     } = req.body;
 
@@ -31,26 +31,26 @@ const createProduct = async (req, res, next) => {
     }
 
     // ✅ Check uploaded files separately
-    if (!req.files || req.files.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please add product images." });
-    }
+    // if (!req.files || req.files.length === 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Please add product images." });
+    // }
 
-    // ✅ Upload to Cloudinary
-    const imagesBuffer = [];
-    for (const file of req.files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: "products",
-      });
-      imagesBuffer.push({
-        public_id: result.public_id,
-        url: result.secure_url,
-      });
-    }
+    // // ✅ Upload to Cloudinary
+    // const imagesBuffer = [];
+    // for (const file of req.files) {
+    //   const result = await cloudinary.uploader.upload(file.path, {
+    //     folder: "products",
+    //   });
+    //   imagesBuffer.push({
+    //     public_id: result.public_id,
+    //     url: result.secure_url,
+    //   });
+    // }
 
     // ✅ Parse computerProperty only if present
-    const parsedComputerProperty = computerProperty ? JSON.parse(computerProperty) : {};
+    // const parsedComputerProperty = computerProperty ? JSON.parse(computerProperty) : {};
 
     const data = {
       name,
@@ -61,10 +61,10 @@ const createProduct = async (req, res, next) => {
       quantity,
       id: parseInt(Date.now() * Math.random()),
       category,
-      // computerProperty,
-      // images
-      computerProperty: [parsedComputerProperty],
-      images: imagesBuffer,
+      computerProperty,
+      images
+      // computerProperty: [parsedComputerProperty],
+      // images: imagesBuffer,
     };
 
     const product = await Product.create(data);
