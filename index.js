@@ -19,10 +19,6 @@ const metaTagsMiddleware = require('./middleware/metaTagsMiddleware');
 const commentRoutes = require('./routes/blogCommentRoute');
 const replyRoutes = require('./routes/blogCommentRoute');
 
-// JSON
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: "true" }));
-
 // CORS
 app.use(
   cors({
@@ -33,7 +29,7 @@ app.use(
       "http://localhost:3000"
     ],
     credentials: true,
-    methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"]
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"]
   })
 );
 
@@ -45,6 +41,13 @@ connectMongodb();
 app.use(logVisitor);
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
+
+app.use("/api/v1/product", productRoutes);
+
+// JSON
+// Now safely use JSON parser for other routes
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 // Social Media Crawler Middleware - Place before routes
 app.use(async (req, res, next) => {
@@ -110,7 +113,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/blog", blogRoutes);
-app.use("/api/v1/product", productRoutes);
+
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
 app.use('/api/v1', commentRoutes);
