@@ -43,7 +43,7 @@ app.use(logVisitor);
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
-// app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/product", productRoutes);
 
 // JSON
 // Now safely use JSON parser for other routes
@@ -115,7 +115,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/blog", blogRoutes);
 
-app.use("/api/v1/product", productRoutes);
+// app.use("/api/v1/product", productRoutes);
 
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
