@@ -18,6 +18,7 @@ const crawlerMiddleware = require('./middleware/crawlerMiddleware');
 const metaTagsMiddleware = require('./middleware/metaTagsMiddleware');
 const commentRoutes = require('./routes/blogCommentRoute');
 const replyRoutes = require('./routes/blogCommentRoute');
+const renderApi = require('./routes/ping');
 
 // CORS
 app.use(
@@ -42,7 +43,7 @@ app.use(logVisitor);
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
-app.use("/api/v1/product", productRoutes);
+// app.use("/api/v1/product", productRoutes);
 
 // JSON
 // Now safely use JSON parser for other routes
@@ -114,10 +115,14 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/blog", blogRoutes);
 
+app.use("/api/v1/product", productRoutes);
+
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
 app.use('/api/v1', commentRoutes);
 app.use('/api/v1', replyRoutes);
+
+app.use('/api/v2', renderApi);
 
 // PORT
 app.listen(PORT, () => {
