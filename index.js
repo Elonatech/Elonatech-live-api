@@ -2,6 +2,28 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
+const { connectMongodb } = require("./config/database");
+const Product = require("./model/productModel");
+const logVisitor = require("./middleware/visitorMiddleware");
+const crawlerMiddleware = require("./middleware/crawlerMiddleware");
+const metaTagsMiddleware = require("./middleware/metaTagsMiddleware");
+
+// ROUTES
+const adminRoutes = require("./routes/adminRoute");
+const blogRoutes = require("./routes/blogRoute");
+const productRoutes = require("./routes/productRoute");
+const newsRoute = require("./routes/newsRoute");
+const visitorRoutes = require("./routes/visitorRoutes");
+const emailRoutes = require("./routes/emailRoute");
+const commentRoutes = require("./routes/blogCommentRoute");
+const replyRoutes = require("./routes/blogCommentRoute");
+const renderApi = require("./routes/ping");
+
+const pingServer = require("./keepAlive");
+const PORT = process.env.PORT || 8000;
+
+// Connect Database
+connectMongodb();
 
 // CORS
 app.use(
@@ -17,58 +39,26 @@ app.use(
   })
 );
 
-const adminRoutes = require("./routes/adminRoute");
-const blogRoutes = require("./routes/blogRoute");
-const newsRoute = require("./routes/newsRoute");
-const visitorRoutes = require("./routes/visitorRoutes");
-const logVisitor = require("./middleware/visitorMiddleware");
-const productRoutes = require("./routes/productRoute");
-const emailRoutes = require("./routes/emailRoute");
-const { connectMongodb } = require("./config/database");
-const PORT = process.env.PORT || 8000;
-const pingServer = require("./keepAlive");
-const RecentlyViewed = require("./model/recentlyviewesModel");
-const Product = require("./model/productModel");
-const crawlerMiddleware = require('./middleware/crawlerMiddleware');
-const metaTagsMiddleware = require('./middleware/metaTagsMiddleware');
-const commentRoutes = require('./routes/blogCommentRoute');
-const replyRoutes = require('./routes/blogCommentRoute');
-const renderApi = require('./routes/ping');
-
-// DATABASE
-connectMongodb();
-
-// Visitor Tracking Middleware
+// Visitor tracking and other middleware
 app.use(logVisitor);
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
-app.use("/api/v1/product", productRoutes);
-
-app.use("/api/v1/blog", blogRoutes);
-
-// JSON
-// Now safely use JSON parser for other routes
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: true }));
-
-// Social Media Crawler Middleware - Place before routes
+// ✅ Social Media Crawler OG Middleware — PLACE HERE
 app.use(async (req, res, next) => {
-  const userAgent = req.get('user-agent') || '';
-  const isSocialMediaCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
+  const userAgent = req.get("user-agent") || "";
+  const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
+  const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
 
-  // Match your frontend product URLs
-  const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/); // captures the MongoDB ObjectId at end
-
-  if (isSocialMediaCrawler && match) {
+  if (isCrawler && match) {
     const productId = match[1];
-
     try {
-      const product = await Product.findById(productId);
-
+      const product = await Product.findById(productId).lean();
       if (product) {
-        const imageUrl = product.images?.[0]?.url || 'https://elonatech.com.ng/default-image.jpg';
-        const description = (product.description || '').replace(/(<([^>]+)>)/gi, '').substring(0, 200) + '...';
+        const imageUrl = product.images?.[0]?.url || "https://elonatech.com.ng/default-image.jpg";
+        const description = (product.description || "")
+          .replace(/(<([^>]+)>)/gi, "")
+          .substring(0, 200) + "...";
 
         const html = `
           <!DOCTYPE html>
@@ -77,15 +67,13 @@ app.use(async (req, res, next) => {
             <meta charset="utf-8" />
             <title>${product.name} - Elonatech Nigeria Limited</title>
 
-            <!-- Open Graph -->
             <meta property="og:title" content="${product.name}" />
             <meta property="og:description" content="${description}" />
             <meta property="og:image" content="${imageUrl}" />
-            <meta property="og:url" content="https://elonatech.com.ng/product/${product.slug}/${product._id}" />
+            <meta property="og:url" content="https://elonatech.com.ng${req.url}" />
             <meta property="og:type" content="product" />
             <meta property="og:site_name" content="Elonatech Nigeria Limited" />
 
-            <!-- Twitter -->
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="${product.name}" />
             <meta name="twitter:description" content="${description}" />
@@ -93,43 +81,45 @@ app.use(async (req, res, next) => {
           </head>
           <body>
             <h1>${product.name}</h1>
+            <img src="${imageUrl}" alt="${product.name}" width="400" />
             <p>${description}</p>
-            <img src="${imageUrl}" alt="${product.name}" />
           </body>
           </html>
         `;
-
-        return res.send(html);
+        return res.status(200).send(html);
       }
     } catch (err) {
-      console.error('Error generating preview:', err);
+      console.error("Error generating OG preview:", err);
     }
   }
 
-  next(); // continue normally for browsers
+  next();
 });
+
+app.use("/api/v1/blog", blogRoutes);
+app.use("/api/v1/product", productRoutes);
+
+// JSON parser AFTER OG handler
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use("/api/v1/auth", adminRoutes);
+
+app.use("/api/v1/email", emailRoutes);
+app.use("/api/v1/visitors", visitorRoutes);
+app.use("/api/v1", commentRoutes);
+app.use("/api/v1", replyRoutes);
+app.use("/api/v2", renderApi);
 
 // Base route
 app.get("/", (req, res) => {
   res.send("ELONATECH API RUNNING");
 });
 
-// Routes
-app.use("/api/v1/auth", adminRoutes);
-// app.use("/api/v1/blog", blogRoutes);
-
-// app.use("/api/v1/product", productRoutes);
-
-app.use("/api/v1/email", emailRoutes);
-app.use("/api/v1/visitors", visitorRoutes);
-app.use('/api/v1', commentRoutes);
-app.use('/api/v1', replyRoutes);
-
-app.use('/api/v2', renderApi);
-
-// PORT
+// Start server
 app.listen(PORT, () => {
-  console.log(`PORT STARTED AT ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
 
 pingServer();
