@@ -12,12 +12,12 @@ router.get("/trends/:id", blogController.getTrendsById);
 
 router.post(
   "/create",
-  storage.single("cloudinary_id"),
+  storage.single("cloudinary_image"),
   blogController.createBlog
 );
 router.put(
   "/update/:id",
-  storage.single("cloudinary_id"),
+  storage.single("cloudinary_image"),
   blogController.updateBlogId
 );
 router.delete("/:id", blogController.deleteBlogId);
