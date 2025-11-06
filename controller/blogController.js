@@ -41,6 +41,9 @@ const createBlog = async (req, res) => {
       },
     });
 
+    console.log('new-blog', newBlog);
+    
+
     return res.status(201).json({
       message: "Blog Created Successfully",
       data: newBlog,
