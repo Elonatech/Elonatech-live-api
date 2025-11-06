@@ -28,7 +28,7 @@ const blogSchema = new mongoose.Schema(
       unique: true,
     },
 
-    cloudinary_image: {
+    cloudinaryImage: {
       public_id: { type: String, required: true },
       url: { type: String, required: true },
     },

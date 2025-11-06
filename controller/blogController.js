@@ -35,7 +35,7 @@ const createBlog = async (req, res) => {
       description,
       author,
       category,
-      cloudinary_image: {
+      cloudinaryImage: {
         public_id: result.public_id,
         url: result.secure_url,
       },
