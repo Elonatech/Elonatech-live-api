@@ -54,58 +54,59 @@ app.use(express.urlencoded({ extended: true }));
 
 // Social Media Crawler Middleware - Place before routes
 app.use(async (req, res, next) => {
-  const userAgent = req.get('user-agent');
-  const isSocialMediaCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin/i.test(userAgent);
+  const userAgent = req.get('user-agent') || '';
+  const isSocialMediaCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
-  if (isSocialMediaCrawler) {
-    // Update the regex to match your actual product route pattern
-    const match = req.url.match(/\/api\/v1\/product\/([^\/]+)/);
-    if (match) {
-      const productId = match[1];
-      try {
-        const product = await Product.findById(productId);
+  // Match your frontend product URLs
+  const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/); // captures the MongoDB ObjectId at end
 
-        if (product) {
-          // Generate HTML with proper meta tags
-          const html = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>${product.name} - Elonatech Nigeria Limited</title>
-                
-                <!-- Open Graph Meta Tags -->
-                <meta property="og:title" content="${product.name}" />
-                <meta property="og:description" content="${product.description ? product.description.substring(0, 200) + '...' : ''}" />
-                <meta property="og:image" content="${product.images && product.images.length > 0 ? product.images[0].url : ''}" />
-                <meta property="og:url" content="/product/${productId}" />
-                <meta property="og:type" content="product" />
-                <meta property="og:site_name" content="Elonatech Nigeria Limited" />
-                
-                <!-- Twitter Card Meta Tags -->
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:site" content="@elonatech" />
-                <meta name="twitter:title" content="${product.name}" />
-                <meta name="twitter:description" content="${product.description ? product.description.substring(0, 200) + '...' : ''}" />
-                <meta name="twitter:image" content="${product.images && product.images.length > 0 ? product.images[0].url : ''}" />
-              </head>
-              <body>
-                <h1>${product.name}</h1>
-                ${product.images && product.images.length > 0 ?
-              `<img src="${product.images[0].url}" alt="${product.name}" />` : ''}
-                <p>${product.description || ''}</p>
-              </body>
-            </html>
-          `;
-          return res.send(html);
-        }
-      } catch (error) {
-        console.error('Error fetching product:', error);
-        // Don't block the request on error, continue to normal handling
-        return next();
+  if (isSocialMediaCrawler && match) {
+    const productId = match[1];
+
+    try {
+      const product = await Product.findById(productId);
+
+      if (product) {
+        const imageUrl = product.images?.[0]?.url || 'https://elonatech.com.ng/default-image.jpg';
+        const description = (product.description || '').replace(/(<([^>]+)>)/gi, '').substring(0, 200) + '...';
+
+        const html = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <title>${product.name} - Elonatech Nigeria Limited</title>
+
+            <!-- Open Graph -->
+            <meta property="og:title" content="${product.name}" />
+            <meta property="og:description" content="${description}" />
+            <meta property="og:image" content="${imageUrl}" />
+            <meta property="og:url" content="https://elonatech.com.ng/product/${product.slug}/${product._id}" />
+            <meta property="og:type" content="product" />
+            <meta property="og:site_name" content="Elonatech Nigeria Limited" />
+
+            <!-- Twitter -->
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="${product.name}" />
+            <meta name="twitter:description" content="${description}" />
+            <meta name="twitter:image" content="${imageUrl}" />
+          </head>
+          <body>
+            <h1>${product.name}</h1>
+            <p>${description}</p>
+            <img src="${imageUrl}" alt="${product.name}" />
+          </body>
+          </html>
+        `;
+
+        return res.send(html);
       }
+    } catch (err) {
+      console.error('Error generating preview:', err);
     }
   }
-  next();
+
+  next(); // continue normally for browsers
 });
 
 // Base route

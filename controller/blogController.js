@@ -1,29 +1,55 @@
 const Blog = require("../model/blogModel");
 const cloudinary = require("../lib/cloudinary");
 const mongoose = require("mongoose");
+const streamifier = require('streamifier');
 
 const createBlog = async (req, res) => {
   try {
     const { title, description, author, category } = req.body;
-    if (!req.file) {
-      return res.status(400).send("Image Path is Undefined");
+
+    if (!title || !description || !author || !category) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-    let result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "Blog"
-    });
-    let newBlog = await Blog.create({
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Image file is required" });
+    }
+
+    const uploadToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "Blogs" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(stream);
+      });
+    };
+
+    const result = await uploadToCloudinary(req.file.buffer);
+
+    const newBlog = await Blog.create({
       title,
       description,
       author,
       category,
-      cloudinary_id: result.secure_url
+      cloudinary_image: {
+        public_id: result.public_id,
+        url: result.secure_url,
+      },
     });
 
-    return res.status(201).send("Blog Created Successfully");
+    return res.status(201).json({
+      message: "Blog Created Successfully",
+      data: newBlog,
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error", error });
   }
-};
+}
 
 // Get All Blogs
 const getBlogs = async (req, res) => {

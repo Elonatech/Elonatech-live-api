@@ -28,10 +28,10 @@ const blogSchema = new mongoose.Schema(
       unique: true,
     },
 
-    cloudinary_id: {
-      type: String,
-      required: true
-    }
+    cloudinary_image: {
+      public_id: { type: String, required: true },
+      url: { type: String, required: true },
+    },
   },
   { timestamps: true }
 );
