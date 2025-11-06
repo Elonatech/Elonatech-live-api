@@ -19,7 +19,8 @@ const blogSchema = new mongoose.Schema(
     },
 
     category: {
-      type: [String],
+      type: String,
+      enum: ['Trend', 'News'],
       required: true
     },
 
