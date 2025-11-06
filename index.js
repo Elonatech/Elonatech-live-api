@@ -2,6 +2,21 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
+
+// CORS
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3001",
+      "https://elonatech-official-website.vercel.app",
+      "https://elonatech.com.ng",
+      "http://localhost:3000"
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"]
+  })
+);
+
 const adminRoutes = require("./routes/adminRoute");
 const blogRoutes = require("./routes/blogRoute");
 const newsRoute = require("./routes/newsRoute");
@@ -20,21 +35,6 @@ const commentRoutes = require('./routes/blogCommentRoute');
 const replyRoutes = require('./routes/blogCommentRoute');
 const renderApi = require('./routes/ping');
 
-// CORS
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3001",
-      "https://elonatech-official-website.vercel.app",
-      "https://elonatech.com.ng",
-      "http://localhost:3000"
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"]
-  })
-);
-
-
 // DATABASE
 connectMongodb();
 
@@ -44,6 +44,8 @@ app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
 app.use("/api/v1/product", productRoutes);
+
+app.use("/api/v1/blog", blogRoutes);
 
 // JSON
 // Now safely use JSON parser for other routes
@@ -113,7 +115,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/v1/auth", adminRoutes);
-app.use("/api/v1/blog", blogRoutes);
+// app.use("/api/v1/blog", blogRoutes);
 
 // app.use("/api/v1/product", productRoutes);
 
