@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
+const compression = require("compression"); // ✅ Add this
 const { connectMongodb } = require("./config/database");
 const Product = require("./model/productModel");
 const logVisitor = require("./middleware/visitorMiddleware");
@@ -24,6 +25,24 @@ const PORT = process.env.PORT || 8000;
 
 // Connect Database
 connectMongodb();
+
+app.use(
+  compression({
+    filter: (req, res) => {
+      const userAgent = req.get("user-agent") || "";
+
+      // Detect crawlers (Facebook, Twitter, WhatsApp, LinkedIn, Slack)
+      const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
+
+      if (isCrawler) {
+        // Disable Brotli for crawlers; they only support gzip or deflate
+        res.setHeader("Content-Encoding", "gzip");
+      }
+
+      return true;
+    },
+  })
+);
 
 // CORS
 app.use(
@@ -48,14 +67,21 @@ app.use(metaTagsMiddleware);
 app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
+
+  if (isCrawler) res.setHeader("Content-Encoding", "identity");
+
   const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
 
   if (isCrawler && match) {
     const productId = match[1];
+
     try {
       const product = await Product.findById(productId).lean();
       if (product) {
-        const imageUrl = product.images?.[0]?.url || "https://elonatech.com.ng/default-image.jpg";
+        const imageUrl =
+          (product.images?.[0]?.url || "https://elonatech.com.ng/default-image.jpg")
+            .replace("/upload/", "/upload/f_jpg/"); // Convert WebP → JPG
+
         const description = (product.description || "")
           .replace(/(<([^>]+)>)/gi, "")
           .substring(0, 200) + "...";
@@ -95,6 +121,7 @@ app.use(async (req, res, next) => {
 
   next();
 });
+
 
 app.use("/api/v1/blog", blogRoutes);
 // app.use("/api/v1/product", productRoutes);
