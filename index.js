@@ -26,23 +26,14 @@ const PORT = process.env.PORT || 8000;
 // Connect Database
 connectMongodb();
 
-app.use(
-  compression({
-    filter: (req, res) => {
-      const userAgent = req.get("user-agent") || "";
-
-      // Detect crawlers (Facebook, Twitter, WhatsApp, LinkedIn, Slack)
-      const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
-
-      if (isCrawler) {
-        // Disable Brotli for crawlers; they only support gzip or deflate
-        res.setHeader("Content-Encoding", "gzip");
-      }
-
-      return true;
-    },
-  })
-);
+app.use(compression({
+  filter: (req, res) => {
+    const userAgent = req.get("user-agent") || "";
+    const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
+    // Disable compression for social crawlers (they sometimes fail on Brotli/gzip)
+    return !isCrawler;
+  },
+}));
 
 // CORS
 app.use(
@@ -57,6 +48,9 @@ app.use(
     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"]
   })
 );
+
+// ✅ Gzip compression — must come early (before routes and responses)
+app.use(compression());  // 👈 This is the key fix
 
 // Visitor tracking and other middleware
 app.use(logVisitor);
