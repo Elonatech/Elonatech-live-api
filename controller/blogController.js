@@ -5,9 +5,18 @@ const streamifier = require('streamifier');
 
 const createBlog = async (req, res) => {
   try {
-    const { title, description, author, category } = req.body;
+    let { title, description, author, category } = req.body;
 
-    if (!title || !description || !author || !category) {
+    // Parse category if it's JSON stringified (since you're using form-data)
+    if (typeof category === "string") {
+      try {
+        category = JSON.parse(category);
+      } catch {
+        category = [category];
+      }
+    }
+
+    if (!title || !description || !author || !category || !category.length) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -15,6 +24,7 @@ const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Image file is required" });
     }
 
+    // Upload to Cloudinary
     const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -30,29 +40,24 @@ const createBlog = async (req, res) => {
 
     const result = await uploadToCloudinary(req.file.buffer);
 
+    // ✅ Save only the image URL to DB
     const newBlog = await Blog.create({
       title,
       description,
       author,
       category,
-      cloudinaryImage: {
-        public_id: result.public_id,
-        url: result.secure_url,
-      },
+      cloudinary_id: result.secure_url,
     });
-
-    console.log('new-blog', newBlog);
-    
 
     return res.status(201).json({
       message: "Blog Created Successfully",
       data: newBlog,
     });
   } catch (error) {
-    console.error(error);
+    console.error("CreateBlogError:", error);
     return res.status(500).json({ message: "Internal Server Error", error });
   }
-}
+};
 
 // Get All Blogs
 const getBlogs = async (req, res) => {

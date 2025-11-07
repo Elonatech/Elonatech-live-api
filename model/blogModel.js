@@ -19,8 +19,7 @@ const blogSchema = new mongoose.Schema(
     },
 
     category: {
-      type: String,
-      enum: ['Trend', 'News'],
+      type: [String],
       required: true
     },
 
@@ -29,10 +28,12 @@ const blogSchema = new mongoose.Schema(
       unique: true,
     },
 
-    cloudinaryImage: {
-      public_id: { type: String, required: true },
-      url: { type: String, required: true },
+
+    cloudinary_id: {
+      type: String,
+      required: true
     },
+
   },
   { timestamps: true }
 );
