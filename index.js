@@ -97,7 +97,7 @@ app.use(async (req, res, next) => {
 });
 
 app.use("/api/v1/blog", blogRoutes);
-app.use("/api/v1/product", productRoutes);
+// app.use("/api/v1/product", productRoutes);
 
 // JSON parser AFTER OG handler
 app.use(express.json({ limit: "100mb" }));
@@ -105,7 +105,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/v1/auth", adminRoutes);
-
+app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
 app.use("/api/v1", commentRoutes);

@@ -10,7 +10,7 @@ const cloudinary = require("../lib/cloudinary");
 const createProduct = async (req, res, next) => {
   try {
     // console.log("📦 req.body:", req.body);
-    console.log("📸 req.files:", req.files);
+    // console.log("📸 req.files:", req.files);
     const {
       name,
       description,
@@ -20,7 +20,7 @@ const createProduct = async (req, res, next) => {
       quantity,
       category,
       computerProperty,
-      // images
+      images
     } = req.body;
 
     // ✅ FIXED: removed `!images`
@@ -32,56 +32,44 @@ const createProduct = async (req, res, next) => {
     }
 
     // ✅ Check uploaded files separately
-    if (!req.files || req.files.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please add product images." });
-    }
+    // if (!req.files || req.files.length === 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Please add product images." });
+    // }
 
-    // ✅ Upload to Cloudinary
+    // const uploadToCloudinary = (fileBuffer) => {
+    //   return new Promise((resolve, reject) => {
+    //     const stream = cloudinary.uploader.upload_stream(
+    //       { folder: "products" },
+    //       (error, result) => {
+    //         if (error) reject(error);
+    //         else resolve(result);
+    //       }
+    //     );
+    //     streamifier.createReadStream(fileBuffer).pipe(stream);
+    //   });
+    // };
+
     // const imagesBuffer = [];
     // for (const file of req.files) {
-    //   const result = await cloudinary.uploader.upload(file.path, {
-    //     folder: "products",
-    //   });
+    //   const result = await uploadToCloudinary(file.buffer);
     //   imagesBuffer.push({
     //     public_id: result.public_id,
     //     url: result.secure_url,
     //   });
     // }
 
-    const uploadToCloudinary = (fileBuffer) => {
-      return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "products" },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        streamifier.createReadStream(fileBuffer).pipe(stream);
-      });
-    };
-
-    const imagesBuffer = [];
-    for (const file of req.files) {
-      const result = await uploadToCloudinary(file.buffer);
-      imagesBuffer.push({
-        public_id: result.public_id,
-        url: result.secure_url,
-      });
-    }
-
     // ✅ Parse computerProperty only if present
-    let parsedComputerProperty = {};
-    try {
-      parsedComputerProperty = computerProperty ? JSON.parse(computerProperty) : {};
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid JSON format in computerProperty",
-      });
-    }
+    // let parsedComputerProperty = {};
+    // try {
+    //   parsedComputerProperty = computerProperty ? JSON.parse(computerProperty) : {};
+    // } catch (err) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid JSON format in computerProperty",
+    //   });
+    // }
 
     const data = {
       name,
@@ -92,10 +80,10 @@ const createProduct = async (req, res, next) => {
       quantity,
       id: parseInt(Date.now() * Math.random()),
       category,
-      // computerProperty, 
-      // images,
-      computerProperty: [parsedComputerProperty],
-      images: imagesBuffer,
+      computerProperty, 
+      images,
+      // computerProperty: [parsedComputerProperty],
+      // images: imagesBuffer,
     };
 
     const product = await Product.create(data);
