@@ -75,8 +75,9 @@ app.use(async (req, res, next) => {
       const product = await Product.findById(productId).lean();
       if (product) {
         const imageUrl =
-          (product.images?.[0]?.url || "https://elonatech.com.ng/default-image.jpg")
-            .replace("/upload/", "/upload/f_jpg/"); // Convert WebP → JPG
+          product.images?.[0]?.url
+            ?.replace("/upload/", "/upload/f_jpg,q_auto:good/")
+          || "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
 
         const description = (product.description || "")
           .replace(/(<([^>]+)>)/gi, "")
