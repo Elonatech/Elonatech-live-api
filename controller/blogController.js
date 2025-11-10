@@ -203,30 +203,44 @@ const getBlogId = async (req, res) => {
   }
 };
 
-
-
 const updateBlogId = async (req, res) => {
-  let user = await Blog.findById(req.params.id);
-  // Check if the user is found
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
+  try {
+    let blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ success: false, message: "Blog not found" });
+    }
+
+    let result;
+
+    if (req.file) {
+      // Upload file from buffer using streamifier
+      const streamUpload = (req) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream((error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          });
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      result = await streamUpload(req);
+    }
+
+    const data = {
+      title: req.body.title || blog.title,
+      description: req.body.description || blog.description,
+      author: req.body.author || blog.author,
+      category: req.body.category || blog.category,
+      cloudinary_id: result ? result.secure_url : blog.cloudinary_id, // keep old image if no new file
+    };
+
+    const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, data, { new: true });
+    res.status(200).json({ success: true, data: updatedBlog });
+  } catch (error) {
+    console.error("Error updating blog:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
   }
-  await cloudinary.uploader.destroy(user.cloudinary_id);
-  let result;
-  if (req.file) {
-    result = await cloudinary.uploader.upload(req.file.path);
-  } else {
-    return res.send("cloudinary path is undefined");
-  }
-  const data = {
-    title: req.body.title,
-    description: req.body.description,
-    author: req.body.author,
-    category: req.body.category,
-    cloudinary_id: result.secure_url
-  };
-  user = await Blog.findByIdAndUpdate(req.params.id, data, { new: true });
-  res.json(user);
 };
 
 const deleteBlogId = async (req, res) => {
