@@ -9,8 +9,7 @@ const cloudinary = require("../lib/cloudinary");
 
 const createProduct = async (req, res, next) => {
   try {
-    // console.log("📦 req.body:", req.body);
-    console.log("📸 req.files:", req.files);
+    console.log(":camera_with_flash: req.files:", req.files);
     const {
       name,
       description,
@@ -20,24 +19,22 @@ const createProduct = async (req, res, next) => {
       quantity,
       category,
       computerProperty,
-      // images
     } = req.body;
-
-    // ✅ FIXED: removed `!images`
+    // :white_check_mark: Basic validation
     if (!name || !brand || !price || !category) {
       return res.status(400).json({
         success: false,
         message: "Please fill Name, Brand, Price, and Category fields.",
       });
     }
-
-    // ✅ Check uploaded files separately
+    // :white_check_mark: Validate images
     if (!req.files || req.files.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please add product images." });
+      return res.status(400).json({
+        success: false,
+        message: "Please add product images.",
+      });
     }
-
+    // :white_check_mark: Cloudinary upload function
     const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -50,7 +47,7 @@ const createProduct = async (req, res, next) => {
         streamifier.createReadStream(fileBuffer).pipe(stream);
       });
     };
-
+    // :white_check_mark: Upload all images
     const imagesBuffer = [];
     for (const file of req.files) {
       const result = await uploadToCloudinary(file.buffer);
@@ -59,19 +56,24 @@ const createProduct = async (req, res, next) => {
         url: result.secure_url,
       });
     }
-
-    // ✅ Parse computerProperty only if present
-    let parsedComputerProperty = {};
+    // :white_check_mark: Parse computerProperty correctly as an ARRAY
+    let parsedComputerProperty = [];
     try {
-      parsedComputerProperty = computerProperty ? JSON.parse(computerProperty) : {};
+      parsedComputerProperty = computerProperty
+        ? JSON.parse(computerProperty)
+        : [];
+      // Ensure it's always an array
+      if (!Array.isArray(parsedComputerProperty)) {
+        parsedComputerProperty = [parsedComputerProperty];
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
         message: "Invalid JSON format in computerProperty",
       });
     }
-
-    const data = {
+    // :white_check_mark: Base product data (reusable)
+    const baseData = {
       name,
       description,
       price,
@@ -79,15 +81,25 @@ const createProduct = async (req, res, next) => {
       brand,
       quantity,
       id: parseInt(Date.now() * Math.random()),
-      category,
-      // computerProperty, 
-      // images,
-      computerProperty: [parsedComputerProperty],
+      computerProperty: parsedComputerProperty,
       images: imagesBuffer,
     };
-
-    const product = await Product.create(data);
-    res.status(201).json({ success: true, product });
+    // :white_check_mark: :one: CREATE PRODUCT IN SELECTED CATEGORY
+    const mainProduct = await Product.create({
+      ...baseData,
+      category: category, // e.g., Computer, POS, Printer
+    });
+    // :white_check_mark: :two: CREATE PRODUCT IN "Products" CATEGORY
+    const generalProduct = await Product.create({
+      ...baseData,
+      category: "Products",
+    });
+    return res.status(201).json({
+      success: true,
+      message: "Product created in both selected category and 'Products' category.",
+      mainCategory: mainProduct,
+      generalCategory: generalProduct,
+    });
   } catch (error) {
     console.error("Error creating product:", error);
     next(error);

@@ -10,7 +10,7 @@ router.get("/:id", blogController.getBlogId);
 router.get("/news/:id", blogController.getNewsById);
 router.get("/trends/:id", blogController.getTrendsById);
 
-router.post(
+router.post( 
   "/create",
   storage.single("cloudinary_image"),
   blogController.createBlog

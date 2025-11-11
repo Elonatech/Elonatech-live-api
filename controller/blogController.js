@@ -205,6 +205,8 @@ const getBlogId = async (req, res) => {
 
 const updateBlogId = async (req, res) => {
   try {
+    console.log("REQ FILE:", req.file);
+
     let blog = await Blog.findById(req.params.id);
     if (!blog) {
       return res.status(404).json({ success: false, message: "Blog not found" });
