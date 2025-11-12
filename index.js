@@ -64,64 +64,71 @@ app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
 // ✅ Social Media Crawler OG Middleware — PLACE HERE
+
+// ✅ Social Media Crawler OG Middleware
 app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
-  if (isCrawler) res.setHeader("Content-Encoding", "identity");
+  // Only proceed for crawlers
+  if (!isCrawler) return next();
 
+  // Match product URL: /product/:slug/:id
   const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
+  if (!match) return next();
 
-  if (isCrawler && match) {
-    const productId = match[1];
+  const productId = match[1];
 
-    try {
-      const product = await Product.findById(productId).lean();
-      if (product) {
-        const imageUrl =
-          product.images?.[0]?.url?.startsWith("http")
-            ? product.images[0].url.replace("/upload/", "/upload/f_jpg,q_auto:eco/")
-            : `https://res.cloudinary.com/elonatech/image/upload/f_jpg,q_auto:eco/${product.images?.[0]?.url || "v1700000000/default.jpg"}`;
+  try {
+    const product = await Product.findById(productId).lean();
+    if (!product) return next();
 
-        const description = (product.description || "")
-          .replace(/(<([^>]+)>)/gi, "")
-          .substring(0, 200) + "...";
+    // Fallback image in case product has no images
+    const fallbackImage = "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
+    const imageUrl = product.images?.[0]?.url
+      ? product.images[0].url.startsWith("http")
+        ? product.images[0].url.replace("/upload/", "/upload/f_jpg,q_auto:eco/")
+        : `https://res.cloudinary.com/elonatech/image/upload/f_jpg,q_auto:eco/${product.images[0].url}`
+      : fallbackImage;
 
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <title>${product.name} - Elonatech Nigeria Limited</title>
+    const description = (product.description || "")
+      .replace(/(<([^>]+)>)/gi, "")
+      .substring(0, 200) + "...";
 
-            <meta property="og:title" content="${product.name}" />
-            <meta property="og:description" content="${description}" />
-            
-            <meta property="og:image" content="https://api.elonatech.com.ng/og-image?product=690c920900a31bf2b3bbc5a2" />
-            <meta property="og:url" content="https://elonatech.com.ng${req.url}" />
-            <meta property="og:type" content="product" />
-            <meta property="og:site_name" content="Elonatech Nigeria Limited" />
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>${product.name} - Elonatech Nigeria Limited</title>
 
-            <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="${product.name}" />
-            <meta name="twitter:description" content="${description}" />
-            <meta name="twitter:image" content="${imageUrl}" />
-          </head>
-          <body>
-            <h1>${product.name}</h1>
-            <img src="${imageUrl}" alt="${product.name}" width="400" />
-            <p>${description}</p>
-          </body>
-          </html>
-        `;
-        return res.status(200).send(html);
-      }
-    } catch (err) {
-      console.error("Error generating OG preview:", err);
-    }
+        <!-- Open Graph -->
+        <meta property="og:title" content="${product.name}" />
+        <meta property="og:description" content="${description}" />
+        <meta property="og:image" content="${imageUrl}" />
+        <meta property="og:url" content="https://elonatech.com.ng${req.url}" />
+        <meta property="og:type" content="product" />
+        <meta property="og:site_name" content="Elonatech Nigeria Limited" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="${product.name}" />
+        <meta name="twitter:description" content="${description}" />
+        <meta name="twitter:image" content="${imageUrl}" />
+      </head>
+      <body>
+        <h1>${product.name}</h1>
+        <img src="${imageUrl}" alt="${product.name}" width="400" />
+        <p>${description}</p>
+      </body>
+      </html>
+    `;
+
+    return res.status(200).send(html);
+  } catch (err) {
+    console.error("Error generating OG preview:", err);
+    return next();
   }
-
-  next();
 });
 
 
