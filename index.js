@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
-const compression = require("compression"); // ✅ Add this
+const compression = require("compression");
 const { connectMongodb } = require("./config/database");
 const Product = require("./model/productModel");
 const logVisitor = require("./middleware/visitorMiddleware");
@@ -23,85 +23,92 @@ const renderApi = require("./routes/ping");
 const pingServer = require("./keepAlive");
 const PORT = process.env.PORT || 8000;
 
-// Connect Database
 connectMongodb();
 
+// ✅ Compression & user agent handling
 app.use((req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
   if (isCrawler) {
-    // Disable compression and chunked transfer
+    // disable compression for crawlers
     res.removeHeader("Content-Encoding");
     res.setHeader("Content-Encoding", "identity");
-    res.setHeader("Transfer-Encoding", ""); // ✅ force no chunked encoding
-    res.setHeader("Cache-Control", "no-transform"); // ensure Cloudflare doesn’t alter it
+    res.setHeader("Transfer-Encoding", "");
+    res.setHeader("Cache-Control", "no-transform");
     return next();
   }
 
-  // For normal browsers
   compression()(req, res, next);
 });
 
-
-// CORS
 app.use(
   cors({
     origin: [
+      "http://localhost:3000",
       "http://localhost:3001",
       "https://elonatech-official-website.vercel.app",
       "https://elonatech.com.ng",
-      "http://localhost:3000"
     ],
     credentials: true,
-    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"]
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
   })
 );
 
-// Visitor tracking and other middleware
 app.use(logVisitor);
-app.use(crawlerMiddleware);
-app.use(metaTagsMiddleware);
 
-// ✅ Social Media Crawler OG Middleware
+// ✅ SOCIAL MEDIA OG TAG MIDDLEWARE (Fixes Facebook, WhatsApp, LinkedIn Previews)
 app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
-  if (!isCrawler) return next(); // Only intercept crawlers
+  if (!isCrawler) return next(); // only handle social bots
 
   try {
-    // Match product page URLs like /product/:slug/:id
     const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
-
     if (match) {
       const productId = match[1];
       const product = await Product.findById(productId).lean();
 
-      if (product) {
-        // Ensure we have a direct image URL
-        const imageUrl = product.images?.[0]?.url?.startsWith("http")
-          ? product.images[0].url
-          : "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
+      if (product && product.images?.length > 0) {
+        // ✅ Get first Cloudinary image
+        let imageUrl = product.images[0].url;
 
-        // Short description for meta tags (max 200 chars)
-        const description = (product.description || "")
-          .replace(/(<([^>]+)>)/gi, "")
-          .substring(0, 200)
-          .trim() + "...";
+        // Ensure it's a full https URL
+        if (!imageUrl.startsWith("https://")) {
+          imageUrl = `https://res.cloudinary.com/elonatech/image/upload/${imageUrl}`;
+        }
+
+        // Add Cloudinary optimization
+        imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto:eco/");
+
+        // Ensure valid file extension
+        if (!/\.(jpg|jpeg|png|webp)$/i.test(imageUrl)) {
+          imageUrl = imageUrl + ".jpg";
+        }
+
+        const cleanDescription =
+          (product.description || "")
+            .replace(/(<([^>]+)>)/gi, "")
+            .substring(0, 200)
+            .trim() + "...";
 
         const productUrl = `https://elonatech.com.ng${req.url}`;
+
+        // ✅ DEBUG (remove after confirming)
+        console.log("🧠 OG Debug:", { imageUrl, productUrl, productName: product.name });
 
         const html = `
           <!DOCTYPE html>
           <html lang="en">
           <head>
             <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>${product.name} - Elonatech Nigeria Limited</title>
 
-            <!-- Open Graph -->
+            <!-- ✅ Open Graph -->
             <meta property="og:title" content="${product.name}" />
-            <meta property="og:description" content="${description}" />
+            <meta property="og:description" content="${cleanDescription}" />
             <meta property="og:image" content="${imageUrl}" />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
@@ -109,54 +116,53 @@ app.use(async (req, res, next) => {
             <meta property="og:type" content="product" />
             <meta property="og:site_name" content="Elonatech Nigeria Limited" />
 
-            <!-- Twitter Card -->
+            <!-- ✅ Twitter -->
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="${product.name}" />
-            <meta name="twitter:description" content="${description}" />
+            <meta name="twitter:description" content="${cleanDescription}" />
             <meta name="twitter:image" content="${imageUrl}" />
           </head>
           <body>
             <h1>${product.name}</h1>
             <img src="${imageUrl}" alt="${product.name}" width="400" />
-            <p>${description}</p>
+            <p>${cleanDescription}</p>
           </body>
           </html>
         `;
 
-        // Send the HTML to the crawler
-        return res.status(200).send(html);
+        return res.status(200).send(html); 
       }
     }
   } catch (err) {
-    console.error("Error generating OG preview:", err);
+    console.error("❌ OG tag generation failed:", err);
   }
 
-  // If not a product page or any error occurs, continue to normal handlers
-  next();
+  next(); 
 });
+
+// ✅ Normal middlewares (after OG handler)
+app.use(crawlerMiddleware);
+app.use(metaTagsMiddleware);
 
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/product", productRoutes);
 
-// JSON parser AFTER OG handler
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
 app.use("/api/v1/auth", adminRoutes);
-// app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
 app.use("/api/v1", commentRoutes);
 app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
 
-// Base route
+
 app.get("/", (req, res) => {
-  res.send("ELONATECH API RUNNING");
+  res.send("ELONATECH API RUNNING 🚀");
 });
 
-// Start server
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
