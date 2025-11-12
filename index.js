@@ -63,38 +63,28 @@ app.use(logVisitor);
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
-// ✅ Social Media Crawler OG Middleware — PLACE HERE
-
 // ✅ Social Media Crawler OG Middleware
 app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
-  if (!isCrawler) return next();
+  if (!isCrawler) return next(); // Only intercept crawlers
 
-  // Disable compression for crawlers
-  res.setHeader("Content-Encoding", "identity");
+  try {
+    // Match product page URLs like /product/:slug/:id
+    const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
 
-  // Match product page URLs like /product/:slug/:id
-  const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
-
-  if (match) {
-    const productId = match[1];
-
-    try {
+    if (match) {
+      const productId = match[1];
       const product = await Product.findById(productId).lean();
+
       if (product) {
-        // Use the first Cloudinary image or fallback
-        let imageUrl = product.images?.[0]?.url;
-        if (!imageUrl) {
-          imageUrl = "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
-        }
+        // Ensure we have a direct image URL
+        const imageUrl = product.images?.[0]?.url?.startsWith("http")
+          ? product.images[0].url
+          : "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
 
-        // Optional: convert WebP to JPEG for better crawler support
-        if (imageUrl.includes("/upload/")) {
-          imageUrl = imageUrl.replace("/upload/", "/upload/f_jpg,q_auto:eco/");
-        }
-
+        // Short description for meta tags (max 200 chars)
         const description = (product.description || "")
           .replace(/(<([^>]+)>)/gi, "")
           .substring(0, 200)
@@ -113,6 +103,8 @@ app.use(async (req, res, next) => {
             <meta property="og:title" content="${product.name}" />
             <meta property="og:description" content="${description}" />
             <meta property="og:image" content="${imageUrl}" />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
             <meta property="og:url" content="${productUrl}" />
             <meta property="og:type" content="product" />
             <meta property="og:site_name" content="Elonatech Nigeria Limited" />
@@ -122,9 +114,6 @@ app.use(async (req, res, next) => {
             <meta name="twitter:title" content="${product.name}" />
             <meta name="twitter:description" content="${description}" />
             <meta name="twitter:image" content="${imageUrl}" />
-
-            <!-- Robots -->
-            <meta name="robots" content="index, follow" />
           </head>
           <body>
             <h1>${product.name}</h1>
@@ -134,14 +123,15 @@ app.use(async (req, res, next) => {
           </html>
         `;
 
+        // Send the HTML to the crawler
         return res.status(200).send(html);
       }
-    } catch (err) {
-      console.error("Error generating OG preview:", err);
-      return res.status(500).send("Error generating OG preview");
     }
+  } catch (err) {
+    console.error("Error generating OG preview:", err);
   }
 
+  // If not a product page or any error occurs, continue to normal handlers
   next();
 });
 
