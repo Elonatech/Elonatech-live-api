@@ -84,15 +84,21 @@ app.use(async (req, res, next) => {
     try {
       const product = await Product.findById(productId).lean();
       if (product) {
-        // Use the first image or a fallback
-        const imageUrl =
-          product.images?.[0]?.url?.startsWith("http")
-            ? product.images[0].url.replace("/upload/", "/upload/f_jpg,q_auto:eco/")
-            : "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
+        // Use the first Cloudinary image or fallback
+        let imageUrl = product.images?.[0]?.url;
+        if (!imageUrl) {
+          imageUrl = "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
+        }
+
+        // Optional: convert WebP to JPEG for better crawler support
+        if (imageUrl.includes("/upload/")) {
+          imageUrl = imageUrl.replace("/upload/", "/upload/f_jpg,q_auto:eco/");
+        }
 
         const description = (product.description || "")
           .replace(/(<([^>]+)>)/gi, "")
-          .substring(0, 200) + "...";
+          .substring(0, 200)
+          .trim() + "...";
 
         const productUrl = `https://elonatech.com.ng${req.url}`;
 
@@ -116,6 +122,9 @@ app.use(async (req, res, next) => {
             <meta name="twitter:title" content="${product.name}" />
             <meta name="twitter:description" content="${description}" />
             <meta name="twitter:image" content="${imageUrl}" />
+
+            <!-- Robots -->
+            <meta name="robots" content="index, follow" />
           </head>
           <body>
             <h1>${product.name}</h1>
@@ -129,12 +138,12 @@ app.use(async (req, res, next) => {
       }
     } catch (err) {
       console.error("Error generating OG preview:", err);
+      return res.status(500).send("Error generating OG preview");
     }
   }
 
   next();
 });
-
 
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/product", productRoutes);
