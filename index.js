@@ -70,65 +70,69 @@ app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
-  // Only proceed for crawlers
   if (!isCrawler) return next();
 
-  // Match product URL: /product/:slug/:id
+  // Disable compression for crawlers
+  res.setHeader("Content-Encoding", "identity");
+
+  // Match product page URLs like /product/:slug/:id
   const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
-  if (!match) return next();
 
-  const productId = match[1];
+  if (match) {
+    const productId = match[1];
 
-  try {
-    const product = await Product.findById(productId).lean();
-    if (!product) return next();
+    try {
+      const product = await Product.findById(productId).lean();
+      if (product) {
+        // Use the first image or a fallback
+        const imageUrl =
+          product.images?.[0]?.url?.startsWith("http")
+            ? product.images[0].url.replace("/upload/", "/upload/f_jpg,q_auto:eco/")
+            : "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
 
-    // Fallback image in case product has no images
-    const fallbackImage = "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
-    const imageUrl = product.images?.[0]?.url
-      ? product.images[0].url.startsWith("http")
-        ? product.images[0].url.replace("/upload/", "/upload/f_jpg,q_auto:eco/")
-        : `https://res.cloudinary.com/elonatech/image/upload/f_jpg,q_auto:eco/${product.images[0].url}`
-      : fallbackImage;
+        const description = (product.description || "")
+          .replace(/(<([^>]+)>)/gi, "")
+          .substring(0, 200) + "...";
 
-    const description = (product.description || "")
-      .replace(/(<([^>]+)>)/gi, "")
-      .substring(0, 200) + "...";
+        const productUrl = `https://elonatech.com.ng${req.url}`;
 
-    const html = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>${product.name} - Elonatech Nigeria Limited</title>
+        const html = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <title>${product.name} - Elonatech Nigeria Limited</title>
 
-        <!-- Open Graph -->
-        <meta property="og:title" content="${product.name}" />
-        <meta property="og:description" content="${description}" />
-        <meta property="og:image" content="${imageUrl}" />
-        <meta property="og:url" content="https://elonatech.com.ng${req.url}" />
-        <meta property="og:type" content="product" />
-        <meta property="og:site_name" content="Elonatech Nigeria Limited" />
+            <!-- Open Graph -->
+            <meta property="og:title" content="${product.name}" />
+            <meta property="og:description" content="${description}" />
+            <meta property="og:image" content="${imageUrl}" />
+            <meta property="og:url" content="${productUrl}" />
+            <meta property="og:type" content="product" />
+            <meta property="og:site_name" content="Elonatech Nigeria Limited" />
 
-        <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="${product.name}" />
-        <meta name="twitter:description" content="${description}" />
-        <meta name="twitter:image" content="${imageUrl}" />
-      </head>
-      <body>
-        <h1>${product.name}</h1>
-        <img src="${imageUrl}" alt="${product.name}" width="400" />
-        <p>${description}</p>
-      </body>
-      </html>
-    `;
+            <!-- Twitter Card -->
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="${product.name}" />
+            <meta name="twitter:description" content="${description}" />
+            <meta name="twitter:image" content="${imageUrl}" />
+          </head>
+          <body>
+            <h1>${product.name}</h1>
+            <img src="${imageUrl}" alt="${product.name}" width="400" />
+            <p>${description}</p>
+          </body>
+          </html>
+        `;
 
-    return res.status(200).send(html);
-  } catch (err) {
-    console.error("Error generating OG preview:", err);
-    return next();
+        return res.status(200).send(html);
+      }
+    } catch (err) {
+      console.error("Error generating OG preview:", err);
+    }
   }
+
+  next();
 });
 
 
