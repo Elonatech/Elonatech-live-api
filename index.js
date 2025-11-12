@@ -96,7 +96,8 @@ app.use(async (req, res, next) => {
 
             <meta property="og:title" content="${product.name}" />
             <meta property="og:description" content="${description}" />
-            <meta property="og:image" content="${imageUrl}" />
+            
+            <meta property="og:image" content="https://api.elonatech.com.ng/og-image?product=690c920900a31bf2b3bbc5a2" />
             <meta property="og:url" content="https://elonatech.com.ng${req.url}" />
             <meta property="og:type" content="product" />
             <meta property="og:site_name" content="Elonatech Nigeria Limited" />
