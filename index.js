@@ -57,7 +57,6 @@ app.use(
 
 app.use(logVisitor);
 
-// ✅ SOCIAL MEDIA OG TAG MIDDLEWARE (Fixes Facebook, WhatsApp, LinkedIn Previews)
 app.use(async (req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
@@ -71,21 +70,14 @@ app.use(async (req, res, next) => {
       const product = await Product.findById(productId).lean();
 
       if (product && product.images?.length > 0) {
-        // ✅ Get first Cloudinary image
         let imageUrl = product.images[0].url;
 
-        // Ensure it's a full https URL
         if (!imageUrl.startsWith("https://")) {
           imageUrl = `https://res.cloudinary.com/elonatech/image/upload/${imageUrl}`;
         }
 
-        // Add Cloudinary optimization
         imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto:eco/");
-
-        // Ensure valid file extension
-        if (!/\.(jpg|jpeg|png|webp)$/i.test(imageUrl)) {
-          imageUrl = imageUrl + ".jpg";
-        }
+        if (!/\.(jpg|jpeg|png|webp)$/i.test(imageUrl)) imageUrl += ".jpg";
 
         const cleanDescription =
           (product.description || "")
@@ -95,8 +87,12 @@ app.use(async (req, res, next) => {
 
         const productUrl = `https://elonatech.com.ng${req.url}`;
 
-        // ✅ DEBUG (remove after confirming)
-        console.log("🧠 OG Debug:", { imageUrl, productUrl, productName: product.name });
+        // ✅ Force plain response (disable all compression)
+        res.removeHeader("Content-Encoding");
+        res.removeHeader("Transfer-Encoding");
+        res.setHeader("Content-Encoding", "identity");
+        res.setHeader("Cache-Control", "no-transform, no-cache, no-store");
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
 
         const html = `
           <!DOCTYPE html>
@@ -106,7 +102,6 @@ app.use(async (req, res, next) => {
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>${product.name} - Elonatech Nigeria Limited</title>
 
-            <!-- ✅ Open Graph -->
             <meta property="og:title" content="${product.name}" />
             <meta property="og:description" content="${cleanDescription}" />
             <meta property="og:image" content="${imageUrl}" />
@@ -116,7 +111,6 @@ app.use(async (req, res, next) => {
             <meta property="og:type" content="product" />
             <meta property="og:site_name" content="Elonatech Nigeria Limited" />
 
-            <!-- ✅ Twitter -->
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="${product.name}" />
             <meta name="twitter:description" content="${cleanDescription}" />
@@ -130,15 +124,17 @@ app.use(async (req, res, next) => {
           </html>
         `;
 
-        return res.status(200).send(html); 
+        // ✅ Send uncompressed response directly
+        return res.status(200).end(html);
       }
     }
   } catch (err) {
     console.error("❌ OG tag generation failed:", err);
   }
 
-  next(); 
+  next();
 });
+
 
 // ✅ Normal middlewares (after OG handler)
 app.use(crawlerMiddleware);
