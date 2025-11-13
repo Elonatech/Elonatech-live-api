@@ -57,84 +57,72 @@ app.use(
 
 app.use(logVisitor);
 
-app.use(async (req, res, next) => {
-  const userAgent = req.get("user-agent") || "";
-  const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
-
-  if (!isCrawler) return next(); // only handle social bots
-
+app.get("/og/:id", async (req, res) => {
   try {
-    const match = req.url.match(/\/product\/[^\/]+\/([a-f0-9]{24})/);
-    if (match) {
-      const productId = match[1];
-      const product = await Product.findById(productId).lean();
+    const productId = req.params.id;
+    const product = await Product.findById(productId).lean();
 
-      if (product && product.images?.length > 0) {
-        let imageUrl = product.images[0].url;
+    if (!product) return res.status(404).send("Product not found");
 
-        if (!imageUrl.startsWith("https://")) {
-          imageUrl = `https://res.cloudinary.com/elonatech/image/upload/${imageUrl}`;
-        }
+    let imageUrl = product.images?.[0]?.url || "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
 
-        imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto:eco/");
-        if (!/\.(jpg|jpeg|png|webp)$/i.test(imageUrl)) imageUrl += ".jpg";
-
-        const cleanDescription =
-          (product.description || "")
-            .replace(/(<([^>]+)>)/gi, "")
-            .substring(0, 200)
-            .trim() + "...";
-
-        const productUrl = `https://elonatech.com.ng${req.url}`;
-
-        // ✅ Force plain response (disable all compression)
-        res.removeHeader("Content-Encoding");
-        res.removeHeader("Transfer-Encoding");
-        res.setHeader("Content-Encoding", "identity");
-        res.setHeader("Cache-Control", "no-transform, no-cache, no-store");
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-
-        const html = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>${product.name} - Elonatech Nigeria Limited</title>
-
-            <meta property="og:title" content="${product.name}" />
-            <meta property="og:description" content="${cleanDescription}" />
-            <meta property="og:image" content="${imageUrl}" />
-            <meta property="og:image:width" content="1200" />
-            <meta property="og:image:height" content="630" />
-            <meta property="og:url" content="${productUrl}" />
-            <meta property="og:type" content="product" />
-            <meta property="og:site_name" content="Elonatech Nigeria Limited" />
-
-            <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="${product.name}" />
-            <meta name="twitter:description" content="${cleanDescription}" />
-            <meta name="twitter:image" content="${imageUrl}" />
-          </head>
-          <body>
-            <h1>${product.name}</h1>
-            <img src="${imageUrl}" alt="${product.name}" width="400" />
-            <p>${cleanDescription}</p>
-          </body>
-          </html>
-        `;
-
-        // ✅ Send uncompressed response directly
-        return res.status(200).end(html);
-      }
+    // Ensure proper Cloudinary optimization and format
+    if (!imageUrl.startsWith("https://")) {
+      imageUrl = `https://res.cloudinary.com/elonatech/image/upload/${imageUrl}`;
     }
+    imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto:eco/");
+    if (!/\.(jpg|jpeg|png|webp)$/i.test(imageUrl)) imageUrl += ".jpg";
+
+    const description =
+      (product.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 200).trim() + "...";
+
+    const productUrl = `https://elonatech.com.ng/product/${product.slug}/${product._id}`;
+
+    // Force plain HTML response
+    res.removeHeader("Content-Encoding");
+    res.removeHeader("Transfer-Encoding");
+    res.setHeader("Content-Encoding", "identity");
+    res.setHeader("Cache-Control", "no-transform, no-cache, no-store");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${product.name} - Elonatech Nigeria Limited</title>
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="${product.name}" />
+        <meta property="og:description" content="${description}" />
+        <meta property="og:image" content="${imageUrl}" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content="${productUrl}" />
+        <meta property="og:type" content="product" />
+        <meta property="og:site_name" content="Elonatech Nigeria Limited" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="${product.name}" />
+        <meta name="twitter:description" content="${description}" />
+        <meta name="twitter:image" content="${imageUrl}" />
+      </head>
+      <body>
+        <h1>${product.name}</h1>
+        <img src="${imageUrl}" alt="${product.name}" width="400" />
+        <p>${description}</p>
+      </body>
+      </html>
+    `;
+
+    return res.status(200).send(html);
   } catch (err) {
-    console.error("❌ OG tag generation failed:", err);
+    console.error("OG generation failed:", err);
+    res.status(500).send("Server error");
   }
-
-  next();
 });
-
 
 // ✅ Normal middlewares (after OG handler)
 app.use(crawlerMiddleware);
