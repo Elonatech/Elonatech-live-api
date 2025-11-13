@@ -46,7 +46,7 @@ const productSchema = new mongoose.Schema(
     brand: { type: String, required: true },
     quantity: String,
     id: Number,
-    category: { type: String, required: true },
+    category: { type: String, required: true }, 
     computerProperty: [computerPropertySchema],
     images: [
       {

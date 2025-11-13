@@ -76,6 +76,7 @@ const createProduct = async (req, res, next) => {
     const baseData = {
       name,
       description,
+      category,
       price,
       odd,
       brand,
