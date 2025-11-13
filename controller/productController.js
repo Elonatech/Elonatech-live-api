@@ -95,6 +95,9 @@ const createProduct = async (req, res, next) => {
       ...baseData,
       category: "Products",
     });
+    console.log('main-product', mainProduct);
+    console.log('general', generalProduct);
+    
     return res.status(201).json({
       success: true,
       message: "Product created in both selected category and 'Products' category.",
