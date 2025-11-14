@@ -23,15 +23,35 @@ const renderApi = require("./routes/ping");
 const pingServer = require("./keepAlive");
 const PORT = process.env.PORT || 8000;
 
+// Connect to MongoDB
 connectMongodb();
 
-// ✅ Compression & user agent handling
+// app.use("/api/v1/blog", blogRoutes);
+// ✅ Body parsers first (important for JSON routes)
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+
+// ✅ CORS
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://elonatech-official-website.vercel.app",
+    "https://elonatech.com.ng",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
+}));
+
+// ✅ Visitor logging
+app.use(logVisitor);
+
+// ✅ Compression & user-agent handling
 app.use((req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
 
   if (isCrawler) {
-    // disable compression for crawlers
     res.removeHeader("Content-Encoding");
     res.setHeader("Content-Encoding", "identity");
     res.setHeader("Transfer-Encoding", "");
@@ -42,31 +62,14 @@ app.use((req, res, next) => {
   compression()(req, res, next);
 });
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "https://elonatech-official-website.vercel.app",
-      "https://elonatech.com.ng",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
-  })
-);
-
-app.use(logVisitor);
-
+// ✅ OG Handler (before other middlewares)
 app.get("/og/:id", async (req, res) => {
   try {
     const productId = req.params.id;
     const product = await Product.findById(productId).lean();
-
     if (!product) return res.status(404).send("Product not found");
 
     let imageUrl = product.images?.[0]?.url || "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";
-
-    // Ensure proper Cloudinary optimization and format
     if (!imageUrl.startsWith("https://")) {
       imageUrl = `https://res.cloudinary.com/elonatech/image/upload/${imageUrl}`;
     }
@@ -78,7 +81,6 @@ app.get("/og/:id", async (req, res) => {
 
     const productUrl = `https://elonatech.com.ng/product/${product.slug}/${product._id}`;
 
-    // Force plain HTML response
     res.removeHeader("Content-Encoding");
     res.removeHeader("Transfer-Encoding");
     res.setHeader("Content-Encoding", "identity");
@@ -92,8 +94,6 @@ app.get("/og/:id", async (req, res) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>${product.name} - Elonatech Nigeria Limited</title>
-
-        <!-- Open Graph -->
         <meta property="og:title" content="${product.name}" />
         <meta property="og:description" content="${description}" />
         <meta property="og:image" content="${imageUrl}" />
@@ -102,8 +102,6 @@ app.get("/og/:id", async (req, res) => {
         <meta property="og:url" content="${productUrl}" />
         <meta property="og:type" content="product" />
         <meta property="og:site_name" content="Elonatech Nigeria Limited" />
-
-        <!-- Twitter -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${product.name}" />
         <meta name="twitter:description" content="${description}" />
@@ -116,24 +114,20 @@ app.get("/og/:id", async (req, res) => {
       </body>
       </html>
     `;
-
     return res.status(200).send(html);
   } catch (err) {
     console.error("OG generation failed:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
-// ✅ Normal middlewares (after OG handler)
+// ✅ Normal middlewares
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
 
+// ✅ API Routes
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/product", productRoutes);
-
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: true, limit: "100mb" }));
-
 app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
@@ -141,14 +135,19 @@ app.use("/api/v1", commentRoutes);
 app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
 
+// Root route
+app.get("/", (req, res) => res.send("ELONATECH API RUNNING 🚀"));
 
-app.get("/", (req, res) => {
-  res.send("ELONATECH API RUNNING 🚀");
+// ✅ Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("GlobalError:", err);
+  if (err.message === "Unsupported file format") {
+    return res.status(400).json({ message: err.message });
+  }
+  return res.status(500).json({ message: "Server Error", error: err.message });
 });
 
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Start server
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 pingServer();

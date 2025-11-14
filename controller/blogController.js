@@ -49,6 +49,8 @@ const createBlog = async (req, res) => {
       cloudinary_id: result.secure_url,
     });
 
+    console.log('newBlog', newBlog);
+    
     return res.status(201).json({
       message: "Blog Created Successfully",
       data: newBlog,
