@@ -55,7 +55,10 @@ const createBlog = async (req, res) => {
     });
   } catch (error) {
     console.error("CreateBlogError:", error);
-    return res.status(500).json({ message: "Internal Server Error", error });
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message, 
+    });
   }
 };
 
