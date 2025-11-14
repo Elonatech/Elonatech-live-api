@@ -1,8 +1,12 @@
+// controller/ping.js
+const KeepRenderApiAlive = (req, res) => {
+  const response = {
+    message: "Server pinged successfully",
+    timestamp: new Date().toISOString(),
+  };
 
-const KeepRenderApiAlive = async (req, res) => {
-  res.status(200).send("Server is alive ✅");
-}
+  console.log("Ping received:", JSON.stringify(response, null, 2));
+  return res.status(200).json(response);
+};
 
-module.exports = {
-  KeepRenderApiAlive
-}
+module.exports = { KeepRenderApiAlive };

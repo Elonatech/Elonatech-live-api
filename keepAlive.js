@@ -2,7 +2,7 @@ const http = require("http");
 const https = require("https");
 const url = require("url");
 
-const baseUrl = process.env.BASEURL || `http://localhost:8000`
+const baseUrl = process.env.BASEURL || `http://localhost:8000`;
 
 const pingServer = () => {
   if (!baseUrl) {
@@ -13,18 +13,20 @@ const pingServer = () => {
   const parsedUrl = url.parse(baseUrl);
   const protocol = parsedUrl.protocol === "https:" ? https : http;
   const target = `${baseUrl}/api/v2/ping`;
-  console.log(target);
+
+  console.log(`Pinging server at: ${target}`);
 
   protocol
-    .get(baseUrl, (res) => {
+    .get(target, (res) => {
+      console.log(`Ping status: ${res.statusCode}`);
       if (res.statusCode === 200) {
-        console.log("Server pinged successfully");
+        console.log("✅ Server pinged successfully");
       } else {
-        console.error(`Failed to ping server. Status code: ${res.statusCode}`);
+        console.error(`❌ Failed to ping server. Status code: ${res.statusCode}`);
       }
     })
     .on("error", (err) => {
-      console.error("Error pinging server:", err);
+      console.error("❌ Error pinging server:", err.message, JSON.stringify(err));
     });
 };
 
