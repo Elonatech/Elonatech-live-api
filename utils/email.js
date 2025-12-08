@@ -2,46 +2,77 @@ const nodemailer = require('nodemailer');
 
 
 const transporter = nodemailer.createTransport({
-  host: "mail.elonatech.com.ng",
-  port: 465,
-  secure: true,
-  debug: true,
-  auth: {
-    user: "webadmin@elonatech.com.ng",
-    pass: "El0n@_W3b@dm1n@"
-  }
+	host: "mail.elonatech.com.ng",
+	port: 465,
+	secure: true,
+	debug: true,
+	auth: {
+		user: "webadmin@elonatech.com.ng",
+		pass: "El0n@_W3b@dm1n@"
+	},
+	tls: {
+		rejectUnauthorized: false
+	}
 });
 
 
 const jobEmail = async (req, res) => {
 
-  try {
+	try {
 
-    const { firstname, lastname, email, number, gender, address, dob, skill, category, status, letter } = req.body;
+		let { firstname, lastname, email, number, gender, address, dob, category, status, letter, skill } = req.body;
 
-    // validation   
-    if (!firstname || !lastname || !email || !number || !category || !status || !letter || !gender || !address || !dob || !skill) {
-      return res.status(400).send("Please Fill All Fields")
-    }
+		let parsedSkills = [];
+		if (typeof skill === "string") {
+			parsedSkills = skill.split(',').map(s => s.trim()).filter(s => s !== "");
+		} else if (Array.isArray(skill)) {
+			parsedSkills = skill;
+		}
 
-    if (req.fileValidationError) {
-      return res.status(400).send("Invalid File Type Pdf Only");
-    }
+		console.log('Type of skills:', typeof skill);
+		console.log('Parsed skills array:', parsedSkills);
 
-    const file = req.file
+		const safeLetter = letter && letter.trim() !== ""
+			? letter
+			: "<p><em>No cover letter provided.</em></p>";
 
-    if (!file) {
-      return res.status(400).send("No File Received");
-    }
+		if (!firstname || !lastname || !email || !number || !category || !status || !gender || !address || !dob || parsedSkills.length === 0) {
+			return res.status(400).json({
+				message: "Please ensure all fields are filled correctly",
+				details: {
+					missing: {
+						firstname: !firstname,
+						lastname: !lastname,
+						email: !email,
+						number: !number,
+						category: !category,
+						status: !status,
+						gender: !gender,
+						address: !address,
+						dob: !dob,
+						skills: parsedSkills.length === 0
+					}
+				}
+			});
+		}
 
+		if (req.fileValidationError) {
+			return res.status(400).json({ message: "Invalid File Type Pdf Only" });
+		}
 
+		const file = req.file
 
-    const mailOptions = {
-      from: 'webadmin@elonatech.com.ng',
-      to: ["contact@elonatech.com.ng", email],
-      replyTo: 'noreply@elonatech.com.ng',
-      subject: "Job Application",
-      html: `<!DOCTYPE html>
+		if (!file) {
+			return res.status(400).json({ message: "No File Received" });
+		}
+
+		const mailOptions = {
+			from: 'webadmin@elonatech.com.ng',
+			to: ['contact@elonatech.com.ng', email],
+
+			replyTo: 'noreply@elonatech.com.ng',
+			subject: "Job Application",
+			html: `<!DOCTYPE html>
 			   <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 			   
 			   <head>
@@ -578,7 +609,7 @@ const jobEmail = async (req, res) => {
 																		   <td class="pad">
 																			   <div style="font-family: sans-serif">
 																				   <div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 14.399999999999999px; color: #555555; line-height: 1.2;">
-																					   <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${skill}&nbsp;</p>
+																					   <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${parsedSkills}&nbsp;</p>
 																				   </div>
 																			   </div>
 																		   </td>
@@ -681,7 +712,7 @@ const jobEmail = async (req, res) => {
 																			   <div style="font-family: sans-serif">
 																				   <div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 21.6px; color: #555555; line-height: 1.8;">
 																				   <div style="margin: 0; font-size: 14px; text-align: left; mso-line-height-alt: 25.2px;">
-																				   ${letter}
+																				   ${safeLetter}
 																					   </div>
 																				   </div>
 																			   </div>
@@ -780,35 +811,50 @@ const jobEmail = async (req, res) => {
 			   </body>
 			   
 			   </html>`,
-      attachments: file ? [{ filename: file.originalname, content: file.buffer }] : []
-    }
+			attachments: file ? [{ filename: file.originalname, content: file.buffer }] : []
+		}
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (info) {
-        res.json({ status: "success" })
-      } else {
+		await new Promise((resolve, reject) => {
+			transporter.sendMail(mailOptions, (err, info) => {
+				if (err) {
+					console.log('Email sending error:', err);
+					reject(err);
+				} else {
+					console.log('Email sent successfully:', info.response);
+					resolve(info);
+				}
+			});
+		});
 
-      }
-    })
-  } catch (error) {
-    console.log(error)
-  }
+		res.json({
+			status: "success",
+			message: "Application submitted successfully"
+		});
+
+		console.log('Received body:', req.body);
+	} catch (error) {
+		console.log(error.message, 'error');
+		res.status(500).json({
+			message: "Failed to process application",
+			error: process.env.NODE_ENV === 'development' ? error.message : undefined
+		});
+	}
 }
 
 const quoteEmail = async (req, res) => {
 
-  const { fullname, email, company, number, project, location, letter } = req.body;
+	const { fullname, email, company, number, project, location, letter } = req.body;
 
-  if (!fullname || !company || !email || !number || !project || !location || !letter) {
-    return res.status(400).send("Please Fill All Fields")
-  }
+	if (!fullname || !company || !email || !number || !project || !location || !letter) {
+		return res.status(400).send("Please Fill All Fields")
+	}
 
-  const mailOptions = {
-    from: email,
-    to: ["admin@elonatech.com.ng"],
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Request Quote",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: ["admin@elonatech.com.ng"],
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Request Quote",
+		html: `
 		
 		<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -1440,50 +1486,50 @@ const quoteEmail = async (req, res) => {
 </body>
 </html>
 	`
-  }
+	}
 
-  transporter.sendMail(mailOptions)
-  return res.status(200).send("Quote Sent!!!!");
+	transporter.sendMail(mailOptions)
+	return res.status(200).send("Quote Sent!!!!");
 
 }
 
 const consultEmail = async (req, res) => {
 
-  const { name, email, occupation, challenge, business, cost, invest } = req.body;
+	const { name, email, occupation, challenge, business, cost, invest } = req.body;
 
 
-  if (!name) {
-    return res.status(400).send("Name is Required")
-  }
+	if (!name) {
+		return res.status(400).send("Name is Required")
+	}
 
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
 
-  if (!occupation) {
-    return res.status(400).send("What you do is Required")
-  }
-  if (!challenge) {
-    return res.status(400).send("Challenges is Required")
-  }
-  if (!business) {
-    return res.status(400).send("Business is Required")
-  }
-  if (!cost) {
-    return res.status(400).send("Cost is Required")
-  }
-  if (!cost) {
-    return res.status(400).send("Invest is Required")
-  }
+	if (!occupation) {
+		return res.status(400).send("What you do is Required")
+	}
+	if (!challenge) {
+		return res.status(400).send("Challenges is Required")
+	}
+	if (!business) {
+		return res.status(400).send("Business is Required")
+	}
+	if (!cost) {
+		return res.status(400).send("Cost is Required")
+	}
+	if (!cost) {
+		return res.status(400).send("Invest is Required")
+	}
 
 
 
-  const mailOptions = {
-    from: email,
-    to: "info@elonatech.com.ng",
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Consultation",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: "info@elonatech.com.ng",
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Consultation",
+		html: `
 		<!DOCTYPE html>
 	<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -2115,41 +2161,41 @@ const consultEmail = async (req, res) => {
 	
 	`
 
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Consultation Form  Sent!!!!");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Consultation Form  Sent!!!!");
 
 }
 
 const contactEmail = async (req, res) => {
 
-  const { name, email, subject, number, message } = req.body;
+	const { name, email, subject, number, message } = req.body;
 
 
-  if (!name) {
-    return res.status(400).send("Name is Required")
-  }
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
+	if (!name) {
+		return res.status(400).send("Name is Required")
+	}
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
 
-  if (!subject) {
-    return res.status(400).send("Subject is Required")
-  }
-  if (!number) {
-    return res.status(400).send("Number is Required")
-  }
-  if (!message) {
-    return res.status(400).send("Message is Required")
-  }
+	if (!subject) {
+		return res.status(400).send("Subject is Required")
+	}
+	if (!number) {
+		return res.status(400).send("Number is Required")
+	}
+	if (!message) {
+		return res.status(400).send("Message is Required")
+	}
 
-  const mailOptions = {
-    from: email,
-    to: "info@elonatech.com.ng",
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Get in Touch with us",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: "info@elonatech.com.ng",
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Get in Touch with us",
+		html: `
 	<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -2715,40 +2761,40 @@ const contactEmail = async (req, res) => {
 	
 	
 	`
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Contact Form Sent!!!!");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Contact Form Sent!!!!");
 }
 
 const reasonContactEmail = async (req, res) => {
 
-  const { name, email, subject, number, message } = req.body;
+	const { name, email, subject, number, message } = req.body;
 
 
-  if (!name) {
-    return res.status(400).send("Name is Required")
-  }
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
+	if (!name) {
+		return res.status(400).send("Name is Required")
+	}
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
 
-  if (!subject) {
-    return res.status(400).send("Subject is Required")
-  }
-  if (!number) {
-    return res.status(400).send("Number is Required")
-  }
-  if (!message) {
-    return res.status(400).send("Message is Required")
-  }
+	if (!subject) {
+		return res.status(400).send("Subject is Required")
+	}
+	if (!number) {
+		return res.status(400).send("Number is Required")
+	}
+	if (!message) {
+		return res.status(400).send("Message is Required")
+	}
 
-  const mailOptions = {
-    from: email,
-    to: "info@elonatech.com.ng",
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Get in Touch with us",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: "info@elonatech.com.ng",
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Get in Touch with us",
+		html: `
 	<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -3315,54 +3361,54 @@ const reasonContactEmail = async (req, res) => {
 	
 	
 	`
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Contact Form Sent!!!!");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Contact Form Sent!!!!");
 }
 
 const checkoutEmail = async (req, res) => {
 
-  const { firstname, lastname, company, email, number, address, state, postal, notes, itemsOrdered, cartTotal, dateNow } = req.body;
+	const { firstname, lastname, company, email, number, address, state, postal, notes, itemsOrdered, cartTotal, dateNow } = req.body;
 
-  if (!firstname) {
-    return res.status(400).send("Firstname is Required")
-  }
+	if (!firstname) {
+		return res.status(400).send("Firstname is Required")
+	}
 
-  if (!lastname) {
-    return res.status(400).send("Lastname is Required")
-  }
-  if (!company) {
-    return res.status(400).send("Company is Required")
-  }
+	if (!lastname) {
+		return res.status(400).send("Lastname is Required")
+	}
+	if (!company) {
+		return res.status(400).send("Company is Required")
+	}
 
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
-  if (!number) {
-    return res.status(400).send("Number is Required")
-  }
-  if (!address) {
-    return res.status(400).send("Address is Required")
-  }
-  if (!state) {
-    return res.status(400).send("State is Required")
-  }
-  if (!postal) {
-    return res.status(400).send("Postal is Required")
-  }
-  if (!notes) {
-    return res.status(400).send("Notes is Required")
-  }
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
+	if (!number) {
+		return res.status(400).send("Number is Required")
+	}
+	if (!address) {
+		return res.status(400).send("Address is Required")
+	}
+	if (!state) {
+		return res.status(400).send("State is Required")
+	}
+	if (!postal) {
+		return res.status(400).send("Postal is Required")
+	}
+	if (!notes) {
+		return res.status(400).send("Notes is Required")
+	}
 
 
 
-  const mailOptions = {
-    from: email,
-    to: ["billing@elonatech.com.ng", email],
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Check Out",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: ["billing@elonatech.com.ng", email],
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Check Out",
+		html: `
     
     <!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -4064,54 +4110,54 @@ const checkoutEmail = async (req, res) => {
 
 </html>
     `
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Checkout Successfully");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Checkout Successfully");
 
 }
 
 const retainerEmail = async (req, res) => {
 
-  const { fullname, company, email, number, service, contract, frequency, days, others, state, address } = req.body;
+	const { fullname, company, email, number, service, contract, frequency, days, others, state, address } = req.body;
 
 
-  if (!fullname) {
-    return res.status(400).send("Fullname is Required")
-  }
-  if (!company) {
-    return res.status(400).send("Company Name is Required")
-  }
+	if (!fullname) {
+		return res.status(400).send("Fullname is Required")
+	}
+	if (!company) {
+		return res.status(400).send("Company Name is Required")
+	}
 
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
-  if (!number) {
-    return res.status(400).send("Phone Number is Required")
-  }
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
+	if (!number) {
+		return res.status(400).send("Phone Number is Required")
+	}
 
-  if (!service) {
-    return res.status(400).send("Retainer Services Required")
-  }
+	if (!service) {
+		return res.status(400).send("Retainer Services Required")
+	}
 
-  if (!contract) {
-    return res.status(400).send("Contract Renewable is Required")
-  }
+	if (!contract) {
+		return res.status(400).send("Contract Renewable is Required")
+	}
 
-  if (!state) {
-    return res.status(400).send("State is Required")
-  }
+	if (!state) {
+		return res.status(400).send("State is Required")
+	}
 
-  if (!address) {
-    return res.status(400).send("Address is Required")
-  }
+	if (!address) {
+		return res.status(400).send("Address is Required")
+	}
 
-  const mailOptions = {
-    from: email,
-    to: "info@elonatech.com.ng",
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Retainership",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: "info@elonatech.com.ng",
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Retainership",
+		html: `
 		<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -4879,50 +4925,50 @@ const retainerEmail = async (req, res) => {
 		
 		
 		`
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Retainership Form Sent!!!!");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Retainership Form Sent!!!!");
 
 }
 
 const sessionEmail = async (req, res) => {
 
-  const { name, email, phone, online, meet, address, discuss, hour, minute, gmt, day, month, year } = req.body;
+	const { name, email, phone, online, meet, address, discuss, hour, minute, gmt, day, month, year } = req.body;
 
-  if (!name) {
-    return res.status(400).send("Name is Required")
-  }
+	if (!name) {
+		return res.status(400).send("Name is Required")
+	}
 
-  if (!email) {
-    return res.status(400).send("Email is Required")
-  }
+	if (!email) {
+		return res.status(400).send("Email is Required")
+	}
 
-  if (!phone) {
-    return res.status(400).send("Phone is Required")
-  }
+	if (!phone) {
+		return res.status(400).send("Phone is Required")
+	}
 
-  if (!day) {
-    return res.status(400).send("Meeting Day is Required")
-  }
-  if (!month) {
-    return res.status(400).send("Meeting Month is Required")
-  }
-  if (!year) {
-    return res.status(400).send("Meeting Year is Required")
-  }
+	if (!day) {
+		return res.status(400).send("Meeting Day is Required")
+	}
+	if (!month) {
+		return res.status(400).send("Meeting Month is Required")
+	}
+	if (!year) {
+		return res.status(400).send("Meeting Year is Required")
+	}
 
-  if (!discuss) {
-    return res.status(400).send("Meeting Brief is Required")
-  }
+	if (!discuss) {
+		return res.status(400).send("Meeting Brief is Required")
+	}
 
 
-  const mailOptions = {
-    from: email,
-    to: "info@elonatech.com.ng",
-    replyTo: 'noreply@elonatech.com.ng',
-    subject: "Book Session",
-    html: `
+	const mailOptions = {
+		from: email,
+		to: "info@elonatech.com.ng",
+		replyTo: 'noreply@elonatech.com.ng',
+		subject: "Book Session",
+		html: `
 	<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -5622,10 +5668,10 @@ const sessionEmail = async (req, res) => {
 </body>
 </html>
 	`
-  }
+	}
 
-  await transporter.sendMail(mailOptions);
-  return res.status(200).send("Successfully Booked a Session!!!!");
+	await transporter.sendMail(mailOptions);
+	return res.status(200).send("Successfully Booked a Session!!!!");
 
 }
 

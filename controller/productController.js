@@ -365,7 +365,7 @@ const updateProduct = async (req, res, next) => {
         battery,
         wireless
       }
-    };
+    };     
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
     });

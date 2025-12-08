@@ -5,11 +5,12 @@ const cors = require("cors");
 const compression = require("compression");
 const { connectMongodb } = require("./config/database");
 const Product = require("./model/productModel");
+
+
 const logVisitor = require("./middleware/visitorMiddleware");
 const crawlerMiddleware = require("./middleware/crawlerMiddleware");
 const metaTagsMiddleware = require("./middleware/metaTagsMiddleware");
 
-// ROUTES
 const adminRoutes = require("./routes/adminRoute");
 const blogRoutes = require("./routes/blogRoute");
 const productRoutes = require("./routes/productRoute");
@@ -20,33 +21,31 @@ const commentRoutes = require("./routes/blogCommentRoute");
 const replyRoutes = require("./routes/blogCommentRoute");
 const renderApi = require("./routes/ping");
 
+
 const pingServer = require("./keepAlive");
+
 const PORT = process.env.PORT || 8000;
 
-// Connect to MongoDB
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://elonatech-official-website.vercel.app",
+      "https://elonatech.com.ng",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
+  })
+);
+
 connectMongodb();
 
-// app.use("/api/v1/blog", blogRoutes);
-// ✅ Body parsers first (important for JSON routes)
+app.use(logVisitor);
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
-// ✅ CORS
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://elonatech-official-website.vercel.app",
-    "https://elonatech.com.ng",
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
-}));
-
-// ✅ Visitor logging
-app.use(logVisitor);
-
-// ✅ Compression & user-agent handling
+// Compression for regular users (after CORS)
 app.use((req, res, next) => {
   const userAgent = req.get("user-agent") || "";
   const isCrawler = /facebookexternalhit|twitterbot|whatsapp|linkedin|slackbot/i.test(userAgent);
@@ -62,7 +61,10 @@ app.use((req, res, next) => {
   compression()(req, res, next);
 });
 
-// ✅ OG Handler (before other middlewares)
+
+app.use(crawlerMiddleware);
+app.use(metaTagsMiddleware);
+
 app.get("/og/:id", async (req, res) => {
   try {
     const productId = req.params.id;
@@ -121,11 +123,9 @@ app.get("/og/:id", async (req, res) => {
   }
 });
 
-// ✅ Normal middlewares
-app.use(crawlerMiddleware);
-app.use(metaTagsMiddleware);
-
-// ✅ API Routes
+// --------------------------------------
+// 6️⃣ API Routes
+// --------------------------------------
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/product", productRoutes);
 app.use("/api/v1/auth", adminRoutes);
@@ -135,10 +135,10 @@ app.use("/api/v1", commentRoutes);
 app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
 
-// Root route
+
 app.get("/", (req, res) => res.send("ELONATECH API RUNNING 🚀"));
 
-// ✅ Global Error Handler
+
 app.use((err, req, res, next) => {
   console.error("GlobalError:", err);
   if (err.message === "Unsupported file format") {
@@ -147,7 +147,6 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ message: "Server Error", error: err.message });
 });
 
-// Start server
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 pingServer();
