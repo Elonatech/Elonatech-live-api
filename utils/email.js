@@ -4119,9 +4119,9 @@ const checkoutEmail = async (req, res) => {
 
 const retainerEmail = async (req, res) => {
 
-	const { fullname, company, email, number, service, contract, frequency, days, others, state, address } = req.body;
-
-
+	const { fullname, company, email, number, service, contract, frequency, days, state, address } = req.body;
+	console.log('req-body', req.body);
+	
 	if (!fullname) {
 		return res.status(400).send("Fullname is Required")
 	}
@@ -4153,8 +4153,8 @@ const retainerEmail = async (req, res) => {
 	}
 
 	const mailOptions = {
-		from: email,
-		to: "info@elonatech.com.ng",
+		from: "info@elonatech.com.ng",
+		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Retainership",
 		html: `
@@ -4927,14 +4927,34 @@ const retainerEmail = async (req, res) => {
 		`
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Retainership Form Sent!!!!");
+	// await transporter.sendMail(mailOptions);
+	// return res.status(200).send("");
+	try {
+		const info = await transporter.sendMail(mailOptions);
+
+		console.log("SMTP Response:", info.response);
+		console.log("Accepted recipients:", info.accepted);
+		console.log("Rejected recipients:", info.rejected);
+
+		res.status(200).json({
+			success: true,
+			message: "Retainership Form Sent!!!!!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 
 }
 
 const sessionEmail = async (req, res) => {
 
-	const { name, email, phone, online, meet, address, discuss, hour, minute, gmt, day, month, year } = req.body;
+	const { name, email, phone, meet, address, discuss, date, hour, minute, gmt } = req.body;
+	console.log('Received body:', req.body);
 
 	if (!name) {
 		return res.status(400).send("Name is Required")
@@ -4948,37 +4968,43 @@ const sessionEmail = async (req, res) => {
 		return res.status(400).send("Phone is Required")
 	}
 
-	if (!day) {
-		return res.status(400).send("Meeting Day is Required")
-	}
-	if (!month) {
-		return res.status(400).send("Meeting Month is Required")
-	}
-	if (!year) {
-		return res.status(400).send("Meeting Year is Required")
-	}
-
 	if (!discuss) {
 		return res.status(400).send("Meeting Brief is Required")
 	}
 
+	if (!date) {
+		return res.status(400).send("Date is Required")
+	}
+
+	if (!hour) {
+		return res.status(400).send("Hour Brief is Required")
+	}
+
+	if (!minute) {
+		return res.status(400).send("Minute Brief is Required")
+	}
+
+	if (!gmt) {
+		return res.status(400).send("Gmt Brief is Required")
+	}
+
 
 	const mailOptions = {
-		from: email,
-		to: "info@elonatech.com.ng",
+		from: "info@elonatech.com.ng",
+		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Book Session",
 		html: `
-	<!DOCTYPE html>
-<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
+		<!DOCTYPE html>
+		<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
-<head>
-<title></title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]--><!--[if !mso]><!-->
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@100;200;300;400;500;600;700;800;900" rel="stylesheet" type="text/css">
-<link href="https://fonts.googleapis.com/css2?family=Oxygen:wght@100;200;300;400;500;600;700;800;900" rel="stylesheet" type="text/css"><!--<![endif]-->
-<style>
+		<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"><!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]--><!--[if !mso]><!-->
+		<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@100;200;300;400;500;600;700;800;900" rel="stylesheet" type="text/css">
+		<link href="https://fonts.googleapis.com/css2?family=Oxygen:wght@100;200;300;400;500;600;700;800;900" rel="stylesheet" type="text/css"><!--<![endif]-->
+		<style>
     * {
         box-sizing: border-box;
     }
@@ -5056,8 +5082,8 @@ const sessionEmail = async (req, res) => {
             max-height: none !important;
         }
     }
-</style>
-</head>
+			</style>
+			</head>
 
 <body style="background-color: #DFDFDF; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none;">
 <table class="nl-container" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #DFDFDF;">
@@ -5370,7 +5396,7 @@ const sessionEmail = async (req, res) => {
                                                         <td class="pad">
                                                             <div style="font-family: sans-serif">
                                                                 <div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 14.399999999999999px; color: #555555; line-height: 1.2;">
-                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${online}</p>
+                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;"></p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -5472,7 +5498,7 @@ const sessionEmail = async (req, res) => {
                                                         <td class="pad">
                                                             <div style="font-family: sans-serif">
                                                                 <div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 14.399999999999999px; color: #555555; line-height: 1.2;">
-                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${day} / ${month} / ${year}</p>
+                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${date}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -5664,15 +5690,37 @@ const sessionEmail = async (req, res) => {
             </td>
         </tr>
     </tbody>
-</table><!-- End -->
-</body>
-</html>
+		</table><!-- End -->
+		</body>
+		</html>
 	`
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Successfully Booked a Session!!!!");
+	try {
+		console.log("=== Email Content Preview ===");
+		console.log("To:", mailOptions.to);
+		console.log("Subject:", mailOptions.subject);
+		// console.log("HTML:", mailOptions.html);
+		console.log("============================");
 
+		const info = await transporter.sendMail(mailOptions);
+
+		console.log("SMTP Response:", info.response);
+		console.log("Accepted recipients:", info.accepted);
+		console.log("Rejected recipients:", info.rejected);
+
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 }
 
 
