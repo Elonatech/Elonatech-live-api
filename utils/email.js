@@ -69,7 +69,7 @@ const jobEmail = async (req, res) => {
 		}
 
 		await resend.emails.send({
-			from: 'webadmin@elonatech.com.ng',
+			from: 'support@elonatech.com.ng',
 			to: ['contact@elonatech.com.ng', email],
 
 			replyTo: 'noreply@elonatech.com.ng',
@@ -4932,11 +4932,10 @@ const retainerEmail = async (req, res) => {
 	// await transporter.sendMail(mailOptions);
 	// return res.status(200).send("");
 	try {
-		const info = await transporter.sendMail(mailOptions);
+		const info = await resend.emails.send(mailOptions);
 
-		console.log("SMTP Response:", info.response);
-		console.log("Accepted recipients:", info.accepted);
-		console.log("Rejected recipients:", info.rejected);
+		console.log("SMTP Response:", info.data);
+		console.log("Accepted recipients");
 
 		res.status(200).json({
 			success: true,
@@ -5699,17 +5698,10 @@ const sessionEmail = async (req, res) => {
 	}
 
 	try {
+		const info = await resend.emails.send(mailOptions)
 		console.log("=== Email Content Preview ===");
-		console.log("To:", mailOptions.to);
-		console.log("Subject:", mailOptions.subject);
-		// console.log("HTML:", mailOptions.html);
+		console.log("To:", info.data);
 		console.log("============================");
-
-		const info = await transporter.sendMail(mailOptions);
-
-		console.log("SMTP Response:", info.response);
-		console.log("Accepted recipients:", info.accepted);
-		console.log("Rejected recipients:", info.rejected);
 
 		res.status(200).json({
 			success: true,
