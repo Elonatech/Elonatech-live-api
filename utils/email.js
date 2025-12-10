@@ -4796,7 +4796,7 @@ const retainerEmail = async (req, res) => {
 															<td class="pad">
 																<div style="font-family: sans-serif">
 																	<div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 21.6px; color: #555555; line-height: 1.8;">
-																		<div style="margin: 0; font-size: 14px; text-align: left; mso-line-height-alt: 25.2px;">${others}</div>
+																		<div style="margin: 0; font-size: 14px; text-align: left; mso-line-height-alt: 25.2px;"></div>
 																	</div>
 																</div>
 															</td>
