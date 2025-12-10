@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const email = require("../utils/email");
+// import * as email from "../utils/email.js";
 const mailchimp = require("../utils/mailChip");
 const upload = require("../lib/careerPdf");
 
