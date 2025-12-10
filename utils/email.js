@@ -1,19 +1,21 @@
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
+import { Resend } from 'resend';
 
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-const transporter = nodemailer.createTransport({
-	host: "mail.elonatech.com.ng",
-	port: 465,
-	secure: true,
-	debug: true,
-	auth: {
-		user: "webadmin@elonatech.com.ng",
-		pass: "El0n@_W3b@dm1n@"
-	},
-	tls: {
-		rejectUnauthorized: false
-	}
-});
+// const transporter = nodemailer.createTransport({
+// 	host: "mail.elonatech.com.ng",
+// 	port: 465,
+// 	secure: true,
+// 	debug: true,
+// 	auth: {
+// 		user: "webadmin@elonatech.com.ng",
+// 		pass: "El0n@_W3b@dm1n@"
+// 	},
+// 	tls: {
+// 		rejectUnauthorized: false
+// 	}
+// });
 
 
 const jobEmail = async (req, res) => {
@@ -66,7 +68,7 @@ const jobEmail = async (req, res) => {
 			return res.status(400).json({ message: "No File Received" });
 		}
 
-		const mailOptions = {
+		await resend.emails.send({
 			from: 'webadmin@elonatech.com.ng',
 			to: ['contact@elonatech.com.ng', email],
 
@@ -812,19 +814,19 @@ const jobEmail = async (req, res) => {
 			   
 			   </html>`,
 			attachments: file ? [{ filename: file.originalname, content: file.buffer }] : []
-		}
+		})
 
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log('Email sending error:', err);
-					reject(err);
-				} else {
-					console.log('Email sent successfully:', info.response);
-					resolve(info);
-				}
-			});
-		});
+		// await new Promise((resolve, reject) => {
+		// 	transporter.sendMail(mailOptions, (err, info) => {
+		// 		if (err) {
+		// 			console.log('Email sending error:', err);
+		// 			reject(err);
+		// 		} else {
+		// 			console.log('Email sent successfully:', info.response);
+		// 			resolve(info);
+		// 		}
+		// 	});
+		// });
 
 		res.json({
 			status: "success",
@@ -833,10 +835,10 @@ const jobEmail = async (req, res) => {
 
 		console.log('Received body:', req.body);
 	} catch (error) {
-		console.log(error.message, 'error');
+		console.error("Email sending error:", error);
 		res.status(500).json({
-			message: "Failed to process application",
-			error: process.env.NODE_ENV === 'development' ? error.message : undefined
+			status: "error",
+			message: "Failed to send email"
 		});
 	}
 }
@@ -4121,7 +4123,7 @@ const retainerEmail = async (req, res) => {
 
 	const { fullname, company, email, number, service, contract, frequency, days, state, address } = req.body;
 	console.log('req-body', req.body);
-	
+
 	if (!fullname) {
 		return res.status(400).send("Fullname is Required")
 	}
