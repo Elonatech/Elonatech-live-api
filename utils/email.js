@@ -1,6 +1,6 @@
 // const nodemailer = require('nodemailer');
 
-const {Resend} = require('resend')
+const { Resend } = require('resend')
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -853,8 +853,8 @@ const quoteEmail = async (req, res) => {
 	}
 
 	const mailOptions = {
-		from: email,
-		to: ["admin@elonatech.com.ng"],
+		from: "support@elonatech.com.ng",
+		to: ["support@elonatech.com.ng", email],
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Request Quote",
 		html: `
@@ -1491,8 +1491,22 @@ const quoteEmail = async (req, res) => {
 	`
 	}
 
-	transporter.sendMail(mailOptions)
-	return res.status(200).send("Quote Sent!!!!");
+	try {
+		const info = await resend.emails.send(mailOptions)
+		console.log("=== Email Content Preview ===");
+		console.log("To:", info);
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 
 }
 
@@ -1528,8 +1542,8 @@ const consultEmail = async (req, res) => {
 
 
 	const mailOptions = {
-		from: email,
-		to: "info@elonatech.com.ng",
+		from: "support@elonatech.com.ng",
+		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Consultation",
 		html: `
@@ -2166,8 +2180,22 @@ const consultEmail = async (req, res) => {
 
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Consultation Form  Sent!!!!");
+	try {
+		const info = await resend.emails.send(mailOptions)
+		console.log("=== Email Content Preview ===");
+		console.log("To:", info);
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 
 }
 
@@ -2194,8 +2222,8 @@ const contactEmail = async (req, res) => {
 	}
 
 	const mailOptions = {
-		from: email,
-		to: "info@elonatech.com.ng",
+		from: "support@elonatech.com.ng",
+		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Get in Touch with us",
 		html: `
@@ -2766,8 +2794,24 @@ const contactEmail = async (req, res) => {
 	`
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Contact Form Sent!!!!");
+	// await transporter.sendMail(mailOptions);
+	// return res.status(200).send("Contact Form Sent!!!!");
+	try {
+		const info = await resend.emails.send(mailOptions)
+		console.log("=== Email Content Preview ===");
+		console.log("To:", info);
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 }
 
 const reasonContactEmail = async (req, res) => {
@@ -2793,8 +2837,8 @@ const reasonContactEmail = async (req, res) => {
 	}
 
 	const mailOptions = {
-		from: email,
-		to: "info@elonatech.com.ng",
+		from: "support@elonatech.com.ng",
+		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Get in Touch with us",
 		html: `
@@ -3366,11 +3410,27 @@ const reasonContactEmail = async (req, res) => {
 	`
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Contact Form Sent!!!!");
+	// await transporter.sendMail(mailOptions);
+	// return res.status(200).send("Contact Form Sent!!!!");
+	try {
+		const info = await resend.emails.send(mailOptions)
+		console.log("=== Email Content Preview ===");
+		console.log("To:", info);
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 }
 
-const checkoutEmail = async (req, res) => {
+const checkoutEmail = async (req, res) => { 
 
 	const { firstname, lastname, company, email, number, address, state, postal, notes, itemsOrdered, cartTotal, dateNow } = req.body;
 
@@ -3407,7 +3467,7 @@ const checkoutEmail = async (req, res) => {
 
 
 	const mailOptions = {
-		from: email,
+		from: "support@elonatech.com.ng",
 		to: ["billing@elonatech.com.ng", email],
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Check Out",
@@ -4115,8 +4175,24 @@ const checkoutEmail = async (req, res) => {
     `
 	}
 
-	await transporter.sendMail(mailOptions);
-	return res.status(200).send("Checkout Successfully");
+	// await transporter.sendMail(mailOptions);
+	// return res.status(200).send("Checkout Successfully");
+	try {
+		const info = await resend.emails.send(mailOptions)
+		console.log("=== Email Content Preview ===");
+		console.log("To:", info);
+		res.status(200).json({
+			success: true,
+			message: "Successfully Booked a Session!",
+		});
+	} catch (error) {
+		console.error("Error sending email:", error);
+		res.status(500).json({
+			success: false,
+			message: "Failed to send email. Please try again later.",
+			error: error.message,
+		});
+	}
 
 }
 
@@ -4156,7 +4232,7 @@ const retainerEmail = async (req, res) => {
 	}
 
 	const mailOptions = {
-		from: "info@elonatech.com.ng",
+		from: "support@elonatech.com.ng",
 		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Retainership",
@@ -4955,7 +5031,7 @@ const retainerEmail = async (req, res) => {
 
 const sessionEmail = async (req, res) => {
 
-	const { name, email, phone, meet, address, discuss, date, hour, minute, gmt } = req.body;
+	const { name, email, phone, online, meet, address, discuss, date, hour, minute, gmt } = req.body;
 	console.log('Received body:', req.body);
 
 	if (!name) {
@@ -4990,9 +5066,8 @@ const sessionEmail = async (req, res) => {
 		return res.status(400).send("Gmt Brief is Required")
 	}
 
-
 	const mailOptions = {
-		from: "info@elonatech.com.ng",
+		from: "support@elonatech.com.ng",
 		to: email,
 		replyTo: 'noreply@elonatech.com.ng',
 		subject: "Book Session",
@@ -5398,7 +5473,7 @@ const sessionEmail = async (req, res) => {
                                                         <td class="pad">
                                                             <div style="font-family: sans-serif">
                                                                 <div class style="font-size: 12px; font-family: Oxygen, Trebuchet MS, Helvetica, sans-serif; mso-line-height-alt: 14.399999999999999px; color: #555555; line-height: 1.2;">
-                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;"></p>
+                                                                    <p style="margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;">${online}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -5701,9 +5776,7 @@ const sessionEmail = async (req, res) => {
 	try {
 		const info = await resend.emails.send(mailOptions)
 		console.log("=== Email Content Preview ===");
-		console.log("To:", info.data);
-		console.log("============================");
-
+		console.log("To:", info);
 		res.status(200).json({
 			success: true,
 			message: "Successfully Booked a Session!",
