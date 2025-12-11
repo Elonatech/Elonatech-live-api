@@ -3430,7 +3430,7 @@ const reasonContactEmail = async (req, res) => {
 	}
 }
 
-const checkoutEmail = async (req, res) => { 
+const checkoutEmail = async (req, res) => {
 
 	const { firstname, lastname, company, email, number, address, state, postal, notes, itemsOrdered, cartTotal, dateNow } = req.body;
 
@@ -4231,12 +4231,13 @@ const retainerEmail = async (req, res) => {
 		return res.status(400).send("Address is Required")
 	}
 
-	const mailOptions = {
-		from: "support@elonatech.com.ng",
-		to: email,
-		replyTo: 'noreply@elonatech.com.ng',
-		subject: "Retainership",
-		html: `
+	try {
+		const { data, error } = await resend.emails.send({
+			from: "support@elonatech.com.ng",
+			to: email,
+			replyTo: 'noreply@elonatech.com.ng',
+			subject: "Retainership",
+			html: `
 		<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -5000,32 +5001,31 @@ const retainerEmail = async (req, res) => {
 	</table><!-- End -->
 </body>
 
-</html>
-		
-		
-		`
+</html>	`
+		})
+		if (error) {
+			console.log("Resend email error:", error);
+			return res.status(500).json({
+				status: "error",
+				message: "Email delivery failed",
+				details: error.message
+			});
+		}
+		return res.json({
+			status: "success",
+			message: "Email sent successfully",
+			id: data.id
+		});
+	} catch (error) {
+		console.log("Unexpected error:", err);
+		return res.status(500).json({
+			status: "error",
+			message: "Unexpected server error"
+		});
 	}
 
 	// await transporter.sendMail(mailOptions);
 	// return res.status(200).send("");
-	try {
-		const info = await resend.emails.send(mailOptions);
-
-		console.log("SMTP Response:", info.data);
-		console.log("Accepted recipients");
-
-		res.status(200).json({
-			success: true,
-			message: "Retainership Form Sent!!!!!",
-		});
-	} catch (error) {
-		console.error("Error sending email:", error);
-		res.status(500).json({
-			success: false,
-			message: "Failed to send email. Please try again later.",
-			error: error.message,
-		});
-	}
 
 }
 
@@ -5066,12 +5066,13 @@ const sessionEmail = async (req, res) => {
 		return res.status(400).send("Gmt Brief is Required")
 	}
 
-	const mailOptions = {
-		from: "support@elonatech.com.ng",
-		to: email,
-		replyTo: 'noreply@elonatech.com.ng',
-		subject: "Book Session",
-		html: `
+	try {
+		const { data, error } = await resend.emails.send({
+			from: "support@elonatech.com.ng",
+			to: email,
+			replyTo: 'noreply@elonatech.com.ng',
+			subject: "Book Session",
+			html: `
 		<!DOCTYPE html>
 		<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -5771,24 +5772,46 @@ const sessionEmail = async (req, res) => {
 		</body>
 		</html>
 	`
-	}
 
-	try {
-		const info = await resend.emails.send(mailOptions)
-		console.log("=== Email Content Preview ===");
-		console.log("To:", info);
-		res.status(200).json({
-			success: true,
-			message: "Successfully Booked a Session!",
+		})
+		if (error) {
+			console.log("Resend email error:", error);
+			return res.status(500).json({
+				status: "error",
+				message: "Email delivery failed",
+				details: error.message
+			});
+		}
+
+		return res.json({
+			status: "success",
+			message: "Email sent successfully",
+			id: data.id
 		});
 	} catch (error) {
-		console.error("Error sending email:", error);
-		res.status(500).json({
-			success: false,
-			message: "Failed to send email. Please try again later.",
-			error: error.message,
+		console.log("Unexpected error:", err);
+		return res.status(500).json({
+			status: "error",
+			message: "Unexpected server error"
 		});
 	}
+
+	// try {
+	// 	const info = await resend.emails.send(mailOptions)
+	// 	console.log("=== Email Content Preview ===");
+	// 	console.log("To:", info);
+	// 	res.status(200).json({
+	// 		success: true,
+	// 		message: "Successfully Booked a Session!",
+	// 	});
+	// } catch (error) {
+	// 	console.error("Error sending email:", error);
+	// 	res.status(500).json({
+	// 		success: false,
+	// 		message: "Failed to send email. Please try again later.",
+	// 		error: error.message,
+	// 	});
+	// }
 }
 
 
