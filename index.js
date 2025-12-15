@@ -43,7 +43,7 @@ connectMongodb();
 
 app.use(logVisitor);
 app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));     
 
 // Compression for regular users (after CORS)
 app.use((req, res, next) => {

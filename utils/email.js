@@ -1,22 +1,22 @@
-// const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
-const { Resend } = require('resend')
+// const { Resend } = require('resend')
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// const resend = new Resend(process.env.RESEND_API_KEY)
 
-// const transporter = nodemailer.createTransport({
-// 	host: "mail.elonatech.com.ng",
-// 	port: 465,
-// 	secure: true,
-// 	debug: true,
-// 	auth: {
-// 		user: "webadmin@elonatech.com.ng",
-// 		pass: "El0n@_W3b@dm1n@"
-// 	},
-// 	tls: {
-// 		rejectUnauthorized: false
-// 	}
-// });
+const transporter = nodemailer.createTransport({
+	host: "mail.elonatech.com.ng",
+	port: 465,
+	secure: true,
+	debug: true,
+	auth: {
+		user: "webadmin@elonatech.com.ng",
+		pass: "El0n@_W3b@dm1n@"
+	},
+	tls: {
+		rejectUnauthorized: false
+	}
+});
 
 
 const jobEmail = async (req, res) => {
@@ -42,20 +42,6 @@ const jobEmail = async (req, res) => {
 		if (!firstname || !lastname || !email || !number || !category || !status || !gender || !address || !dob || parsedSkills.length === 0) {
 			return res.status(400).json({
 				message: "Please ensure all fields are filled correctly",
-				details: {
-					missing: {
-						firstname: !firstname,
-						lastname: !lastname,
-						email: !email,
-						number: !number,
-						category: !category,
-						status: !status,
-						gender: !gender,
-						address: !address,
-						dob: !dob,
-						skills: parsedSkills.length === 0
-					}
-				}
 			});
 		}
 
@@ -69,8 +55,12 @@ const jobEmail = async (req, res) => {
 			return res.status(400).json({ message: "No File Received" });
 		}
 
-		await resend.emails.send({
-			from: 'support@elonatech.com.ng',
+		// await resend.emails.send({
+
+		// })
+
+		const mailOptions = {
+			from: 'webadmin@elonatech.com.ng',
 			to: ['contact@elonatech.com.ng', email],
 
 			replyTo: 'noreply@elonatech.com.ng',
@@ -815,19 +805,19 @@ const jobEmail = async (req, res) => {
 			   
 			   </html>`,
 			attachments: file ? [{ filename: file.originalname, content: file.buffer }] : []
-		})
+		}
 
-		// await new Promise((resolve, reject) => {
-		// 	transporter.sendMail(mailOptions, (err, info) => {
-		// 		if (err) {
-		// 			console.log('Email sending error:', err);
-		// 			reject(err);
-		// 		} else {
-		// 			console.log('Email sent successfully:', info.response);
-		// 			resolve(info);
-		// 		}
-		// 	});
-		// });
+		await new Promise((resolve, reject) => {
+			transporter.sendMail(mailOptions, (err, info) => {
+				if (err) {
+					console.log('Email sending error:', err);
+					reject(err);
+				} else {
+					console.log('Email sent successfully:', info.response);
+					resolve(info);
+				}
+			});
+		});
 
 		res.json({
 			status: "success",
@@ -846,18 +836,19 @@ const jobEmail = async (req, res) => {
 
 const quoteEmail = async (req, res) => {
 
-	const { fullname, email, company, number, project, location, letter } = req.body;
+	try {
+		const { fullname, email, company, number, project, location, letter } = req.body;
 
-	if (!fullname || !company || !email || !number || !project || !location || !letter) {
-		return res.status(400).send("Please Fill All Fields")
-	}
+		if (!fullname || !company || !email || !number || !project || !location || !letter) {
+			return res.status(400).send("Please Fill All Fields")
+		}
 
-	const mailOptions = {
-		from: "support@elonatech.com.ng",
-		to: ["support@elonatech.com.ng", email],
-		replyTo: 'noreply@elonatech.com.ng',
-		subject: "Request Quote",
-		html: `
+		const mailOptions = {
+			from: "webadmin@elonatech.com.ng",
+			to: ["support@elonatech.com.ng", email],
+			replyTo: 'noreply@elonatech.com.ng',
+			subject: "Request Quote",
+			html: `
 		
 		<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -1489,25 +1480,16 @@ const quoteEmail = async (req, res) => {
 </body>
 </html>
 	`
-	}
+		}
 
-	try {
-		const info = await resend.emails.send(mailOptions)
-		console.log("=== Email Content Preview ===");
-		console.log("To:", info);
-		res.status(200).json({
-			success: true,
-			message: "Successfully Booked a Session!",
-		});
+		transporter.sendMail(mailOptions, 'mail')
 	} catch (error) {
-		console.error("Error sending email:", error);
+		console.error("Email sending error:", error);
 		res.status(500).json({
-			success: false,
-			message: "Failed to send email. Please try again later.",
-			error: error.message,
+			status: "error",
+			message: "Failed to send email"
 		});
 	}
-
 }
 
 const consultEmail = async (req, res) => {
