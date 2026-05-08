@@ -1013,7 +1013,7 @@ const jobEmail = async (req, res) => {
 																				<div
 																					style="color:#555555;font-family:Oxygen, Trebuchet MS, Helvetica, sans-serif;font-size:12px;font-weight:400;line-height:120%;text-align:center;mso-line-height-alt:14.399999999999999px;">
 																					<p style="margin: 0; word-break: break-word;"><span
-																							style="color: #ffffff;"><strong>Elonatech Nigeria Limited ©&nbsp; 2024 All rights
+																							style="color: #ffffff;"><strong>Elonatech Nigeria Limited ©&nbsp; ${new Date().getFullYear()} All rights
 																								reserved</strong></span></p>
 																					<p style="margin: 0; word-break: break-word;">&nbsp;</p>
 																					<span style="color: #ffffff;">You can view our privacy policy </span>
@@ -1124,6 +1124,7 @@ const quoteEmail = async (req, res) => {
 			replyTo: "noreply@elonatech.com.ng",
 			to: email,
 			bcc: ["info@elonatech.com.ng"],
+			subject: "Quote Request",
 			html: `<!DOCTYPE html>
 <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
@@ -2916,22 +2917,20 @@ const consultEmail = async (req, res) => {
                               <td class="pad">
                                 <div
                                   style="color:#555555;font-family:Oxygen, Trebuchet MS, Helvetica, sans-serif;font-size:12px;font-weight:400;line-height:120%;text-align:center;mso-line-height-alt:14.399999999999999px;">
-                                  <p style="margin: 0; word-break: break-word;"><span
-                                      style="color: #ffffff;"><strong>Elonatech Nigeria Limited ©&nbsp; 2024 All rights
-                                        reserved</strong></span></p>
+                                  <p style="margin: 0; word-break: break-word;">
+                                    <span style="color: #ffffff;"><strong>Elonatech Nigeria Limited ©&nbsp; ${new
+				Date().getFullYear()} All rights reserved</strong>
+                                    </span>
+                                  </p>
                                   <p style="margin: 0; word-break: break-word;">&nbsp;</p>
-                                  <p style="margin: 0; word-break: break-word;"><span style="color: #ffffff;">Want to
-                                      change which emails you receive from us? You can update your preferences</span>
-                                    <span style="color: #c13b3b;"><a href="http://example.com/preferences"
-                                        target="_blank" rel="noopener"
-                                        style="text-decoration: underline; color: #56B500;">here</a></span> <span
-                                      style="color: #ffffff;">or unsubscribe</span> <span style="color: #c13b3b;"><a
-                                        href="http://example.com/unsubcribe" target="_blank" rel="noopener"
-                                        style="text-decoration: underline; color: #56B500;">here</a>.</span> <span
-                                      style="color: #ffffff;">You can view our privacy policy </span><span
-                                      style="color: #c13b3b;"><a href="http://www.example.com/privacy-policy"
-                                        target="_blank" rel="noopener"
-                                        style="text-decoration: underline; color: #56B500;">here</a>.</span></p>
+                                  <span style="color: #ffffff;">You can view our privacy policy </span>
+                                  <span style="color: #c13b3b;"><a href="http://www.elonatech.com.ng/policy"
+                                      target="_blank" rel="noopener"
+                                      style="text-decoration: underline; color: #56B500;">here</a>.
+                                  </span>
+                                  <p style="margin-top: 10px;">This email was sent to <a href="mailto:${email}"
+                                      style="text-decoration: underline; color: #3b75c1;">${email}</a> because you
+                                    signed up for one of our services</p>
                                 </div>
                               </td>
                             </tr>
@@ -7474,14 +7473,11 @@ const sessionEmail = async (req, res) => {
 		try {
 			await sgMail.send(mailOptions);
 			console.log("Email sent successfully");
+			return res.json({ status: "success", message: "Session booked successfully" });
 		} catch (error) {
 			console.error("Error sending email:", error);
+			return res.status(500).json({ status: "error", message: "Failed to send email" });
 		}
-
-		return res.json({
-			status: "success",
-			message: "Session booked successfully"
-		});
 
 	} catch (error) {
 		console.error("Email sending error:", error);
