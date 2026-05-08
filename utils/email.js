@@ -120,6 +120,14 @@ const jobEmail = async (req, res) => {
 								display: inline-block !important;
 							}
 
+							.social-table {
+								margin: 0 auto !important;
+							}
+
+							.social-table td {
+								text-align: center !important;
+							}
+
 							.icons-inner {
 								text-align: center;
 							}
@@ -970,37 +978,77 @@ const jobEmail = async (req, res) => {
 																		<tr>
 																			<td class="pad">
 																				<div class="alignment" align="center">
-																					<table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-																						role="presentation"
-																						style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
-																						<tr>
-																							<td style="padding:0 2px 0 2px;"><a href="https://www.facebook.com/elonatech"
-																									target="_blank"><img
-																										src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png"
-																										width="32" height="auto" alt="Facebook" title="facebook"
-																										style="display: block; height: auto; border: 0;"></a></td>
-																							<td style="padding:0 2px 0 2px;"><a href="https://www.twitter.com/elonatech"
-																									target="_blank"><img
-																										src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png"
-																										width="32" height="auto" alt="Twitter" title="twitter"
-																										style="display: block; height: auto; border: 0;"></a></td>
-																							<td style="padding:0 2px 0 2px;"><a
-																									href="https://www.linkedin.com/company/elonatech/" target="_blank"><img
-																										src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png"
-																										width="32" height="auto" alt="Linkedin" title="linkedin"
-																										style="display: block; height: auto; border: 0;"></a></td>
-																							<td style="padding:0 2px 0 2px;"><a href="https://www.instagram.com/elonatech"
-																									target="_blank"><img
-																										src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png"
-																										width="32" height="auto" alt="Instagram" title="instagram"
-																										style="display: block; height: auto; border: 0;"></a></td>
-																							<td style="padding:0 2px 0 2px;"><a href="https://www.youtube.com/eloatech"
-																									target="_blank"><img
-																										src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png"
-																										width="32" height="auto" alt="YouTube" title="YouTube"
-																										style="display: block; height: auto; border: 0;"></a></td>
-																						</tr>
-																					</table>
+																					<table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                                    <tr>
+                                      <!-- Facebook -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.facebook.com/elonatech" target="_blank"><img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png"
+                                            width="32" height="auto" alt="Facebook" title="facebook"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Instagram -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.instagram.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png"
+                                            width="32" height="auto" alt="Instagram" title="instagram"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Threads -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.threads.com/@elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/threads@2x.png"
+                                            width="32" height="auto" alt="Threads" title="threads"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Tiktok -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.tiktok.com/@.elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/tiktok@2x.png"
+                                            width="32" height="auto" alt="Tiktok" title="tiktok"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Twitter -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.twitter.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png"
+                                            width="32" height="auto" alt="Twitter" title="twitter"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Linkedin -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.linkedin.com/company/elonatech/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png"
+                                            width="32" height="auto" alt="Linkedin" title="linkedin"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Pinterest -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.pinterest.com/Elonatechnig/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/pinterest@2x.png"
+                                            width="32" height="auto" alt="Pinterest" title="pinterest"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- YouTube -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.youtube.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png"
+                                            width="32" height="auto" alt="YouTube" title="YouTube"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                    </tr>
+                                  </table>
 																				</div>
 																			</td>
 																		</tr>
@@ -1178,6 +1226,14 @@ const quoteEmail = async (req, res) => {
       .desktop_hide table.icons-inner,
       .social_block.desktop_hide .social-table {
         display: inline-block !important;
+      }
+
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
       }
 
       .icons-inner {
@@ -1876,9 +1932,9 @@ const quoteEmail = async (req, res) => {
                             <tr>
                               <td class="pad">
                                 <div class="alignment" align="center">
-                                  <table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-                                    role="presentation"
-                                    style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
+                                  <table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                     <tr>
                                       <!-- Facebook -->
                                       <td style="padding:0 2px 0 2px;">
@@ -2152,6 +2208,14 @@ const consultEmail = async (req, res) => {
       .desktop_hide table.icons-inner,
       .social_block.desktop_hide .social-table {
         display: inline-block !important;
+      }
+
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
       }
 
       .icons-inner {
@@ -2835,9 +2899,9 @@ const consultEmail = async (req, res) => {
                             <tr>
                               <td class="pad">
                                 <div class="alignment" align="center">
-                                  <table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-                                    role="presentation"
-                                    style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
+                                  <table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                     <tr>
                                       <!-- Facebook -->
                                       <td style="padding:0 2px 0 2px;">
@@ -3098,6 +3162,14 @@ const contactEmail = async (req, res) => {
 			.social_block.desktop_hide .social-table {
 				display: inline-block !important;
 			}
+
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
+      }
 
 			.icons-inner {
 				text-align: center;
@@ -3538,15 +3610,77 @@ const contactEmail = async (req, res) => {
 														<tr>
 															<td class="pad">
 																<div class="alignment" align="center">
-																	<table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
-																		<tr>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.facebook.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png" width="32" height="auto" alt="Facebook" title="facebook" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.twitter.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png" width="32" height="auto" alt="Twitter" title="twitter" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.linkedin.com/company/elonatech/" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png" width="32" height="auto" alt="Linkedin" title="linkedin" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.instagram.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png" width="32" height="auto" alt="Instagram" title="instagram" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.youtube.com/eloatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png" width="32" height="auto" alt="YouTube" title="YouTube" style="display: block; height: auto; border: 0;"></a></td>
-																		</tr>
-																	</table>
+																	<table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                                    <tr>
+                                      <!-- Facebook -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.facebook.com/elonatech" target="_blank"><img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png"
+                                            width="32" height="auto" alt="Facebook" title="facebook"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Instagram -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.instagram.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png"
+                                            width="32" height="auto" alt="Instagram" title="instagram"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Threads -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.threads.com/@elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/threads@2x.png"
+                                            width="32" height="auto" alt="Threads" title="threads"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Tiktok -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.tiktok.com/@.elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/tiktok@2x.png"
+                                            width="32" height="auto" alt="Tiktok" title="tiktok"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Twitter -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.twitter.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png"
+                                            width="32" height="auto" alt="Twitter" title="twitter"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Linkedin -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.linkedin.com/company/elonatech/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png"
+                                            width="32" height="auto" alt="Linkedin" title="linkedin"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Pinterest -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.pinterest.com/Elonatechnig/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/pinterest@2x.png"
+                                            width="32" height="auto" alt="Pinterest" title="pinterest"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- YouTube -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.youtube.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png"
+                                            width="32" height="auto" alt="YouTube" title="YouTube"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                    </tr>
+                                  </table>
 																</div>
 															</td>
 														</tr>
@@ -3714,6 +3848,14 @@ const reasonContactEmail = async (req, res) => {
       .desktop_hide table.icons-inner,
       .social_block.desktop_hide .social-table {
         display: inline-block !important;
+      }
+
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
       }
 
       .icons-inner {
@@ -4317,9 +4459,9 @@ const reasonContactEmail = async (req, res) => {
                             <tr>
                               <td class="pad">
                                 <div class="alignment" align="center">
-                                  <table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-                                    role="presentation"
-                                    style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
+                                  <table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                     <tr>
                                       <!-- Facebook -->
                                       <td style="padding:0 2px 0 2px;">
@@ -4591,6 +4733,14 @@ const checkoutEmail = async (req, res) => {
 			.social_block.desktop_hide .social-table {
 				display: inline-block !important;
 			}
+
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
+      }
 
 			.icons-inner {
 				text-align: center;
@@ -5168,15 +5318,77 @@ const checkoutEmail = async (req, res) => {
 														<tr>
 															<td class="pad">
 																<div class="alignment" align="center">
-																	<table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
-																		<tr>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.facebook.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png" width="32" height="auto" alt="Facebook" title="facebook" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.twitter.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png" width="32" height="auto" alt="Twitter" title="twitter" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.linkedin.com/company/elonatech/" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png" width="32" height="auto" alt="Linkedin" title="linkedin" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.instagram.com/elonatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png" width="32" height="auto" alt="Instagram" title="instagram" style="display: block; height: auto; border: 0;"></a></td>
-																			<td style="padding:0 2px 0 2px;"><a href="https://www.youtube.com/eloatech" target="_blank"><img src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png" width="32" height="auto" alt="YouTube" title="YouTube" style="display: block; height: auto; border: 0;"></a></td>
-																		</tr>
-																	</table>
+																	<table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                                    <tr>
+                                      <!-- Facebook -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.facebook.com/elonatech" target="_blank"><img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/facebook@2x.png"
+                                            width="32" height="auto" alt="Facebook" title="facebook"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Instagram -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.instagram.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/instagram@2x.png"
+                                            width="32" height="auto" alt="Instagram" title="instagram"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Threads -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.threads.com/@elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/threads@2x.png"
+                                            width="32" height="auto" alt="Threads" title="threads"
+                                            style="display: block; height: auto; border: 0;">
+                                        </a>
+                                      </td>
+                                      <!-- Tiktok -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.tiktok.com/@.elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/tiktok@2x.png"
+                                            width="32" height="auto" alt="Tiktok" title="tiktok"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Twitter -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.twitter.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png"
+                                            width="32" height="auto" alt="Twitter" title="twitter"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Linkedin -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.linkedin.com/company/elonatech/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/linkedin@2x.png"
+                                            width="32" height="auto" alt="Linkedin" title="linkedin"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- Pinterest -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.pinterest.com/Elonatechnig/" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/pinterest@2x.png"
+                                            width="32" height="auto" alt="Pinterest" title="pinterest"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                      <!-- YouTube -->
+                                      <td style="padding:0 2px 0 2px;">
+                                        <a href="https://www.youtube.com/elonatech" target="_blank">
+                                          <img
+                                            src="https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/youtube@2x.png"
+                                            width="32" height="auto" alt="YouTube" title="YouTube"
+                                            style="display: block; height: auto; border: 0;"></a>
+                                      </td>
+                                    </tr>
+                                  </table>
 																</div>
 															</td>
 														</tr>
@@ -5369,6 +5581,14 @@ const retainerEmail = async (req, res) => {
         display: inline-block !important;
       }
 
+			.social-table {
+        margin: 0 auto !important;
+      }
+
+      .social-table td {
+        text-align: center !important;
+      }
+				
       .icons-inner {
         text-align: center;
       }
@@ -6239,9 +6459,9 @@ const retainerEmail = async (req, res) => {
                             <tr>
                               <td class="pad">
                                 <div class="alignment" align="center">
-                                  <table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-                                    role="presentation"
-                                    style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
+                                  <table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                     <tr>
                                       <!-- Facebook -->
                                       <td style="padding:0 2px 0 2px;">
@@ -7310,9 +7530,9 @@ const sessionEmail = async (req, res) => {
                             <tr>
                               <td class="pad">
                                 <div class="alignment" align="center">
-                                  <table class="social-table" width="180px" border="0" cellpadding="0" cellspacing="0"
-                                    role="presentation"
-                                    style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; display: inline-block;">
+                                  <table class="social-table" border="0" cellpadding="0" cellspacing="0"
+                                    role="presentation" align="center"
+                                    style="margin: 0 auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                     <tr>
                                       <!-- Facebook -->
                                       <td style="padding:0 2px 0 2px;">
