@@ -18,6 +18,8 @@ const transporter = nodemailer.createTransport({
 	}
 });
 
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const jobEmail = async (req, res) => {
 
@@ -59,7 +61,7 @@ const jobEmail = async (req, res) => {
 
 		const mailOptions = {
 			from: 'noreply@elonatech.com.ng',
-			replyTo: 'noreply@elonatech.com.ng',
+			// replyTo: 'noreply@elonatech.com.ng',
 			to: email,
 			bcc: ["recruitment@elonatech.com.ng"],
 			subject: "Job Application",
@@ -1084,21 +1086,14 @@ const jobEmail = async (req, res) => {
 				</body>
 
 				</html>`,
-			attachments: file ? [{ filename: file.originalname, content: file.buffer }] : []
+			attachments: file ? [{
+				filename: file.originalname,
+				content: file.buffer.toString('base64'),
+				encoding: 'base64'
+			}] : []
 		}
 
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log('Email sending error:', err);
-					reject(err);
-				} else {
-					console.log('Email sent successfully:', info.response);
-					console.log('Email sent to:', info.envelope.to);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
 
 		res.json({
 			status: "success",
@@ -2042,17 +2037,8 @@ const quoteEmail = async (req, res) => {
 		}
 
 		try {
-			await new Promise((resolve, reject) => {
-				transporter.sendMail(mailOptions, (err, info) => {
-					if (err) {
-						console.log("Email sending error:", err);
-						reject(err);
-					} else {
-						console.log("Email sent successfully:", info.response);
-						resolve(info);
-					}
-				});
-			});
+			await sgMail.send(mailOptions);
+			console.log("Email sent successfully");
 
 			return res.json({
 				status: "success",
@@ -3015,17 +3001,8 @@ const consultEmail = async (req, res) => {
 	}
 
 	try {
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
+		console.log("Email sent successfully");
 
 		return res.json({
 			status: "success",
@@ -3639,17 +3616,8 @@ const contactEmail = async (req, res) => {
 	}
 
 	try {
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
+		console.log("Email sent successfully");
 
 		return res.json({
 			status: "success",
@@ -4512,17 +4480,8 @@ const reasonContactEmail = async (req, res) => {
 	}
 
 	try {
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
+		console.log("Email sent successfully");
 
 		return res.json({
 			status: "success",
@@ -5297,17 +5256,8 @@ const checkoutEmail = async (req, res) => {
 	}
 
 	try {
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
+		console.log("Email sent successfully");
 
 		return res.json({
 			status: "success",
@@ -6452,17 +6402,8 @@ const retainerEmail = async (req, res) => {
 	}
 
 	try {
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		await sgMail.send(mailOptions);
+		console.log("Email sent successfully");
 
 		return res.json({
 			status: "success",
@@ -7530,17 +7471,12 @@ const sessionEmail = async (req, res) => {
 
 </html>`
 		}
-		await new Promise((resolve, reject) => {
-			transporter.sendMail(mailOptions, (err, info) => {
-				if (err) {
-					console.log("Email sending error:", err);
-					reject(err);
-				} else {
-					console.log("Email sent successfully:", info.response);
-					resolve(info);
-				}
-			});
-		});
+		try {
+			await sgMail.send(mailOptions);
+			console.log("Email sent successfully");
+		} catch (error) {
+			console.error("Error sending email:", error);
+		}
 
 		return res.json({
 			status: "success",
