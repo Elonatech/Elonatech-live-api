@@ -1,3 +1,5 @@
+// This file defines a function to ping the server at regular intervals to keep it alive. It uses the http or https module based on the protocol of the base URL, which is obtained from an environment variable. The function sends a GET request to the /api/v2/ping endpoint and logs the response status. If there is an error during the request, it logs the error message. The pingServer function is set to run every 10 minutes using setInterval.
+// keepAlive.js
 const http = require("http");
 const https = require("https");
 const url = require("url");

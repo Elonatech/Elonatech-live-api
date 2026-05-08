@@ -5,6 +5,8 @@ const generateMetaHtml = (product) => {
 
   const sanitizedDescription = product.description.replace(/<[^>]*>/g, '');
 
+  
+
   return `
       <!DOCTYPE html>
       <html lang="en">
