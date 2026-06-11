@@ -7748,7 +7748,7 @@ const emptdpEmail = async (req, res) => {
     const mailOptions = {
       from: 'noreply@elonatech.com.ng',
       // replyTo: 'noreply@elonatech.com.ng',
-      to: "stephaniechi74@gmail.com",
+      to: "training@elonatech.com.ng",
       // bcc: ["recruitment@elonatech.com.ng"],
       subject: `New Training Application — ${fullName}`,
       html: `<!DOCTYPE html>
