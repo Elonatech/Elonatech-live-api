@@ -20,6 +20,7 @@ const emailRoutes = require("./routes/emailRoute");
 const commentRoutes = require("./routes/blogCommentRoute");
 const replyRoutes = require("./routes/blogCommentRoute");
 const renderApi = require("./routes/ping");
+const sitemapRoute = require("./routes/sitemapRoute");
 
 
 const pingServer = require("./keepAlive");
@@ -135,6 +136,8 @@ app.use("/api/v1", commentRoutes);
 app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
 
+
+app.use("/sitemap.xml", sitemapRoute);
 
 app.get("/", (req, res) => res.send("ELONATECH API RUNNING 🚀"));
 
