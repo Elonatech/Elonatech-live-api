@@ -1,4 +1,5 @@
 const Blog = require("../model/blogModel");
+const Product = require("../model/productModel");
 
 const SITE = "https://elonatech.com.ng";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -14,7 +15,6 @@ const staticPages = [
   { loc: "/consulting/", priority: "0.80", changefreq: "monthly" },
   { loc: "/retainer-partnership/", priority: "0.80", changefreq: "monthly" },
   { loc: "/training/", priority: "0.80", changefreq: "monthly" },
-  { loc: "/policy/", priority: "0.40", changefreq: "yearly" },
   { loc: "/web-design/", priority: "0.90", changefreq: "monthly" },
   { loc: "/app-development/", priority: "0.90", changefreq: "monthly" },
   { loc: "/domain/", priority: "0.80", changefreq: "monthly" },
@@ -70,9 +70,6 @@ const staticPages = [
   { loc: "/israel-uhwonuwoma-o/", priority: "0.50", changefreq: "yearly" },
   { loc: "/oreva-p-oku/", priority: "0.80", changefreq: "yearly" },
   { loc: "/violet-oku/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/toju-okene-joe/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/jamiu-noah/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/joseph-okoronkwo/", priority: "0.50", changefreq: "yearly" },
   { loc: "/animation-career/", priority: "0.60", changefreq: "monthly" },
   { loc: "/digital-career/", priority: "0.60", changefreq: "monthly" },
   { loc: "/graphic-career/", priority: "0.60", changefreq: "monthly" },
@@ -99,7 +96,10 @@ const urlEntry = ({ loc, lastmod, priority, changefreq }) => `
 
 const getSitemap = async (req, res) => {
   try {
-    const blogs = await Blog.find({}, "slug _id category updatedAt").lean();
+    const [blogs, products] = await Promise.all([
+      Blog.find({}, "slug _id category updatedAt").lean(),
+      Product.find({}, "slug _id updatedAt").lean(),
+    ]);
 
     const staticEntries = staticPages
       .map(p => urlEntry({ ...p, loc: `${SITE}${p.loc}`, lastmod: TODAY }))
@@ -125,6 +125,21 @@ const getSitemap = async (req, res) => {
       })
       .join("");
 
+    const productEntries = products
+      .filter(p => p.slug)
+      .map(p => {
+        const lastmod = p.updatedAt
+          ? new Date(p.updatedAt).toISOString().split("T")[0]
+          : TODAY;
+        return urlEntry({
+          loc: `${SITE}/product/${escapeXml(p.slug)}/${p._id}`,
+          lastmod,
+          priority: "0.70",
+          changefreq: "weekly",
+        });
+      })
+      .join("");
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -133,6 +148,7 @@ const getSitemap = async (req, res) => {
     http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 ${staticEntries}
 ${blogEntries}
+${productEntries}
 </urlset>`;
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8");

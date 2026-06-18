@@ -9,6 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
 const Blog = require("../model/blogModel");
+const Product = require("../model/productModel");
 
 const SITE = "https://elonatech.com.ng";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -23,7 +24,6 @@ const staticPages = [
   { loc: "/consulting/", priority: "0.80", changefreq: "monthly" },
   { loc: "/retainer-partnership/", priority: "0.80", changefreq: "monthly" },
   { loc: "/training/", priority: "0.80", changefreq: "monthly" },
-  { loc: "/policy/", priority: "0.40", changefreq: "yearly" },
   { loc: "/web-design/", priority: "0.90", changefreq: "monthly" },
   { loc: "/app-development/", priority: "0.90", changefreq: "monthly" },
   { loc: "/domain/", priority: "0.80", changefreq: "monthly" },
@@ -79,9 +79,6 @@ const staticPages = [
   { loc: "/israel-uhwonuwoma-o/", priority: "0.50", changefreq: "yearly" },
   { loc: "/oreva-p-oku/", priority: "0.80", changefreq: "yearly" },
   { loc: "/violet-oku/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/toju-okene-joe/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/jamiu-noah/", priority: "0.50", changefreq: "yearly" },
-  { loc: "/joseph-okoronkwo/", priority: "0.50", changefreq: "yearly" },
   { loc: "/animation-career/", priority: "0.60", changefreq: "monthly" },
   { loc: "/digital-career/", priority: "0.60", changefreq: "monthly" },
   { loc: "/graphic-career/", priority: "0.60", changefreq: "monthly" },
@@ -112,8 +109,11 @@ async function generate() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected. Fetching blogs...");
 
-    const blogs = await Blog.find({}, "slug _id category updatedAt").lean();
-    console.log(`Found ${blogs.length} blog posts.`);
+    const [blogs, products] = await Promise.all([
+      Blog.find({}, "slug _id category updatedAt").lean(),
+      Product.find({}, "slug _id updatedAt").lean(),
+    ]);
+    console.log(`Found ${blogs.length} blog posts, ${products.length} products.`);
 
     const staticEntries = staticPages.map((p) =>
       urlEntry({ ...p, loc: `${SITE}${p.loc}`, lastmod: TODAY })
@@ -138,6 +138,20 @@ async function generate() {
         });
       });
 
+    const productEntries = products
+      .filter(p => p.slug)
+      .map(p => {
+        const lastmod = p.updatedAt
+          ? new Date(p.updatedAt).toISOString().split("T")[0]
+          : TODAY;
+        return urlEntry({
+          loc: `${SITE}/product/${escapeXml(p.slug)}/${p._id}`,
+          lastmod,
+          priority: "0.70",
+          changefreq: "weekly",
+        });
+      });
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -149,12 +163,14 @@ ${staticEntries.join("\n")}
 
 ${blogEntries.join("\n")}
 
+${productEntries.join("\n")}
+
 </urlset>`;
 
     const outputPath = path.resolve(__dirname, "sitemap.xml");
     fs.writeFileSync(outputPath, xml, "utf8");
 
-    console.log(`\n✅ sitemap.xml generated with ${staticEntries.length} static pages + ${blogEntries.length} blog posts.`);
+    console.log(`\n✅ sitemap.xml generated with ${staticEntries.length} static pages + ${blogEntries.length} blog posts + ${productEntries.length} products.`);
     console.log(`📁 Saved to: ${outputPath}`);
     console.log(`\n👉 Copy this file to your frontend /public/sitemap.xml before deploying.\n`);
   } catch (err) {
