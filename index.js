@@ -40,8 +40,6 @@ app.use(
   })
 );
 
-connectMongodb();
-
 app.use(logVisitor);
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));     
@@ -151,6 +149,7 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
-pingServer();
+connectMongodb().then(() => {
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  pingServer();
+});
