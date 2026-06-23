@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Comment = require('../model/blogCommentModel');
 const Reply = require('../model/blogReplyModel');
+const verifyToken = require('../middleware/Admin');
 
 // Get comments for a specific blog post
 router.get('/comments/:blogId', async (req, res) => {
@@ -45,7 +46,7 @@ router.post('/comments', async (req, res) => {
 });
 
 // Delete a comment
-router.delete('/comments/:id', async (req, res) => {
+router.delete('/comments/:id', verifyToken, async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.id);
     if (!comment) {
@@ -103,7 +104,7 @@ router.post('/replies', async (req, res) => {
 });
 
 // Delete a reply
-router.delete('/replies/:id', async (req, res) => {
+router.delete('/replies/:id', verifyToken, async (req, res) => {
   try {
     const reply = await Reply.findById(req.params.id);
     if (!reply) {

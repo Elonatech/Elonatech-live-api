@@ -50,7 +50,7 @@ const createBlog = async (req, res) => {
     });
 
     console.log('newBlog', newBlog);
-    
+
     return res.status(201).json({
       message: "Blog Created Successfully",
       data: newBlog,
@@ -59,39 +59,50 @@ const createBlog = async (req, res) => {
     console.error("CreateBlogError:", error);
     return res.status(500).json({
       message: "Internal Server Error",
-      error: error.message, 
+      error: error.message,
     });
   }
 };
 
 // Get All Blogs
 const getBlogs = async (req, res) => {
-  const getAllBlogs = await Blog.find().sort({ createdAt: -1 });
-
-  if (!getAllBlogs) {
-    return res.status(400).send("Bad request");
+  try {
+    const getAllBlogs = await Blog.find().sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: getAllBlogs.length, getAllBlogs });
+  } catch (error) {
+    console.error("Get blogs error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
-  return res.status(200).json({ getAllBlogs });
 };
 
 // Get blogs by trends
 const getTrends = async (req, res) => {
-  const getAllTrends = await Blog.find({ category: "trends" }).sort({ createdAt: -1 });
+  try {
+    const getAllTrends = await Blog.find({ category: "trends" }).sort({ createdAt: -1 });
 
-  if (!getAllTrends) {
-    return res.status(400).send("Bad request");
+    // if (!getAllTrends) {
+    //   return res.status(400).send("Bad request");
+    // }
+    return res.status(200).json({ success: true, count: getAllTrends.length, getAllTrends });
+  } catch (error) {
+    console.error("Get Trends error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
-  return res.status(200).json({ getAllTrends });
 };
 
 // Get blogs by news
 const getNews = async (req, res) => {
-  const getAllNews = await Blog.find({ category: "news" }).sort({ createdAt: -1 });
+  try {
+    const getAllNews = await Blog.find({ category: "news" }).sort({ createdAt: -1 });
 
-  if (!getAllNews) {
-    return res.status(400).send("Bad request");
+    // if (!getAllNews) {
+    //   return res.status(400).send("Bad request");
+    // }
+    return res.status(200).json({ success: true, count: getAllNews.length, getAllNews });
+  } catch (error) {
+    console.error("Get News error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
-  return res.status(200).json({ getAllNews });
 };
 
 //get news by id
@@ -250,15 +261,29 @@ const updateBlogId = async (req, res) => {
   }
 };
 
+// const deleteBlogId = async (req, res) => {
+//   let blog = await Blog.findById(req.params.id);
+//   await cloudinary.uploader.destroy(blog.cloudinary_id);
+//   await blog.deleteOne();
+//   return res.status(200).send("Blog Successfully Deleted");
+// };
+
 const deleteBlogId = async (req, res) => {
-  // Find Blog by Id
-  let blog = await Blog.findById(req.params.id);
-  // Delete image from cloudinary
-  await cloudinary.uploader.destroy(blog.cloudinary_id);
-  // Delete user from db
-  await blog.deleteOne();
-  return res.status(200).send("Blog Successfully Deleted");
-};
+  try {
+    const blog = await Blog.findById(req.params.id)
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" })
+    }
+
+    await cloudinary.uploader.destroy(blog.cloudinary_id)
+    await blog.deleteOne()
+    return res.status(200).json({ message: "Blog Successfully Deleted" });
+  } catch (error) {
+    console.error("Delete blog error:", error);
+    return res.status(500).json({ message: "Server Error" });
+
+  }
+}
 
 module.exports = {
   createBlog,

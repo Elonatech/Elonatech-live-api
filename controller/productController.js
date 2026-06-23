@@ -91,18 +91,18 @@ const createProduct = async (req, res, next) => {
       category: category, // e.g., Computer, POS, Printer
     });
     // :white_check_mark: :two: CREATE PRODUCT IN "Products" CATEGORY
-    const generalProduct = await Product.create({
-      ...baseData,
-      category: "Products",
-    });
+    // const generalProduct = await Product.create({
+    //   ...baseData,
+    //   category: "Products",
+    // });
     console.log('main-product', mainProduct);
-    console.log('general', generalProduct);
-    
+    // console.log('general', generalProduct);
+
     return res.status(201).json({
       success: true,
-      message: "Product created in both selected category and 'Products' category.",
-      mainCategory: mainProduct,
-      generalCategory: generalProduct,
+      message: "Product created successfully",
+      data: mainProduct,
+      // generalCategory: generalProduct,
     });
   } catch (error) {
     console.error("Error creating product:", error);
@@ -111,11 +111,16 @@ const createProduct = async (req, res, next) => {
 };
 
 const getAllProducts = async (req, res, next) => {
-  const getAllProducts = await Product.find();
-  if (!getAllProducts) {
-    return res.status(400).send("Bad request");
+  try {
+    const getAllProducts = await Product.find();
+    // if (!getAllProducts) {
+    //   return res.status(400).send("Bad request");
+    // }
+    return res.status(200).json({ success: true, count: getAllProducts.length, getAllProducts });
+  } catch (error) {
+    console.error("Get all products error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
-  return res.status(200).json({ getAllProducts });
 };
 
 
@@ -365,13 +370,14 @@ const updateProduct = async (req, res, next) => {
         battery,
         wireless
       }
-    };     
+    };
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
     });
     return res.status(200).json({ newUpdateProduct });
   } catch (error) {
-    console.log(error);
+    console.error("Update product error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -379,35 +385,44 @@ const updateProductImage = async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) {
-      return res.status(404).send({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    let images = [...req.body.images];
-    if (images.length === 0) {
-      return res.status(400).send("Added New Product Images");
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No image files provided" });
     }
 
-    let imagesBuffer = [];
-
-    for (let i = 0; i < images.length; i++) {
-      const result = await cloudinary.uploader.upload(images[i], {
-        folder: "products"
+    const uploadToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "products" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        streamifier.createReadStream(fileBuffer).pipe(stream);
       });
+    };
+
+    const imagesBuffer = [];
+    for (const file of req.files) {
+      const result = await uploadToCloudinary(file.buffer);
       imagesBuffer.push({
         public_id: result.public_id,
         url: result.secure_url
       });
     }
 
-    const data = {
-      images: imagesBuffer
-    };
-    const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
-      new: true
-    });
-    return res.status(200).json({ newUpdateProduct });
+    const newUpdateProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { images: imagesBuffer },
+      { new: true }
+    );
+    return res.status(200).json({ success: true, newUpdateProduct });
   } catch (error) {
-    console.log(error);
+    console.error("Update image error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -418,7 +433,7 @@ const deleteProduct = async (req, res) => {
       return res.status(404).send("Id not found");
     }
     await Product.findByIdAndDelete(product);
-    return res.status(200).json({ message: "Blog Successfully Deleted" });
+    return res.status(200).json({ message: "Product Successfully Deleted" });
   } catch (error) {
     console.log(error);
   }

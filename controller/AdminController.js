@@ -21,35 +21,41 @@ const adminRegister = async (req, res) => {
     const admin = await Admin.create({ email, password: encryptedPassword });
     return res.status(201).json({ admin });
   } catch (error) {
-    console.log(error);
+    console.error("Register error:", error);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
 //  Sign In
 const adminLogin = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).send("Fill All Required Fields");
-  }
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).send("Fill All Required Fields");
+    }
 
-  // check if Admin exist
-  const admin = await Admin.findOne({ email: email });
-  if (!admin) {
-    return res.status(400).send("Admin does not exist");
-  }
+    // check if Admin exist
+    const admin = await Admin.findOne({ email: email });
+    if (!admin) {
+      return res.status(400).send("Admin does not exist");
+    }
 
-  // compare passwords
-  const passwordValid = await bcrypt.compare(password, admin.password);
-  if (!passwordValid) {
-    return res.status(400).send("Incorrect Email or Password");
-  }
+    // compare passwords
+    const passwordValid = await bcrypt.compare(password, admin.password);
+    if (!passwordValid) {
+      return res.status(400).send("Incorrect Email or Password");
+    }
 
-  const payload = { id: Admin._id };
-  // Admin jwt
-  const token = jwt.sign(payload, token_key, { expiresIn: "3600" });
-  return res
-    .status(200)
-    .json({ message: "Login Successful", email: admin.email, access: token });
+    const payload = { id: admin._id };
+    // Admin jwt
+    const token = jwt.sign(payload, token_key, { expiresIn: "1h" });
+    return res
+      .status(200)
+      .json({ message: "Login Successful", email: admin.email, access: token });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
 };
 
 const verifyAdmin = async (req, res) => {

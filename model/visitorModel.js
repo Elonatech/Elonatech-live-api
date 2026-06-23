@@ -12,9 +12,11 @@ const visitorSchema = new mongoose.Schema({
   visitDate: {
     type: Date,
     default: Date.now,
-    required: true
+    required: true,
   }
 });
+
+visitorSchema.index({ visitDate: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
 
 const Visitor = mongoose.model("Visitor", visitorSchema);
 

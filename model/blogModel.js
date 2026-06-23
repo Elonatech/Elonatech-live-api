@@ -20,6 +20,8 @@ const blogSchema = new mongoose.Schema(
 
     category: {
       type: [String],
+      enum: ["blog", "trends", "news"],
+      default: ["blog"],
       required: true
     },
 

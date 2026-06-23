@@ -16,14 +16,14 @@ const commentSchema = new mongoose.Schema({
   gender: {
     type: String,
     required: true,
-    enum: ['male', 'female']
+    enum: ['male', 'female']      
   },
   userImage: {
     type: String,
   },
   createdAt: {
     type: Date,
-    required: true
+    default: Date.now
   }
 }, {
   timestamps: true

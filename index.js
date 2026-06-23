@@ -18,7 +18,7 @@ const newsRoute = require("./routes/newsRoute");
 const visitorRoutes = require("./routes/visitorRoutes");
 const emailRoutes = require("./routes/emailRoute");
 const commentRoutes = require("./routes/blogCommentRoute");
-const replyRoutes = require("./routes/blogCommentRoute");
+// const replyRoutes = require("./routes/blogCommentRoute");
 const renderApi = require("./routes/ping");
 const sitemapRoute = require("./routes/sitemapRoute");
 
@@ -41,8 +41,8 @@ app.use(
 );
 
 app.use(logVisitor);
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ extended: true, limit: "100mb" }));     
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 // Compression for regular users (after CORS)
 app.use((req, res, next) => {
@@ -63,6 +63,15 @@ app.use((req, res, next) => {
 
 app.use(crawlerMiddleware);
 app.use(metaTagsMiddleware);
+
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 app.get("/og/:id", async (req, res) => {
   try {
@@ -92,26 +101,20 @@ app.get("/og/:id", async (req, res) => {
       <!DOCTYPE html>
       <html lang="en">
       <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>${product.name} - Elonatech Nigeria Limited</title>
-        <meta property="og:title" content="${product.name}" />
-        <meta property="og:description" content="${description}" />
-        <meta property="og:image" content="${imageUrl}" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:url" content="${productUrl}" />
-        <meta property="og:type" content="product" />
-        <meta property="og:site_name" content="Elonatech Nigeria Limited" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="${product.name}" />
-        <meta name="twitter:description" content="${description}" />
-        <meta name="twitter:image" content="${imageUrl}" />
-      </head>
-      <body>
-        <h1>${product.name}</h1>
-        <img src="${imageUrl}" alt="${product.name}" width="400" />
-        <p>${description}</p>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <title>${escapeHtml(product.name)} - Elonatech Nigeria Limited</title>
+   <meta property="og:title" content="${escapeHtml(product.name)}" />
+   <meta property="og:description" content="${escapeHtml(description)}" />
+   <meta property="og:image" content="${escapeHtml(imageUrl)}" />
+   <meta property="og:url" content="${escapeHtml(productUrl)}" />
+   <meta name="twitter:title" content="${escapeHtml(product.name)}" />
+   <meta name="twitter:description" content="${escapeHtml(description)}" />
+   <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
+...
+<h1>${escapeHtml(product.name)}</h1>
+<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" width="400" />
+<p>${escapeHtml(description)}</p>
       </body>
       </html>
     `;
@@ -131,7 +134,7 @@ app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);
 app.use("/api/v1", commentRoutes);
-app.use("/api/v1", replyRoutes);
+// app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
 
 

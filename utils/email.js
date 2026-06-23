@@ -1,21 +1,23 @@
+
+
 const nodemailer = require('nodemailer');
 
 const { Resend } = require('resend')
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY) // Dead code
 
 const transporter = nodemailer.createTransport({
   host: "mail.elonatech.com.ng",
   port: 465,
   secure: true,
-  debug: true,
+  // debug: true,
   auth: {
-    user: "webadmin@elonatech.com.ng",
-    pass: "El0n@_W3b@dm1n@"
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
   },
-  tls: {
-    rejectUnauthorized: false
-  }
+  // tls: {
+  //   rejectUnauthorized: false
+  // }
 });
 
 const sgMail = require('@sendgrid/mail');
