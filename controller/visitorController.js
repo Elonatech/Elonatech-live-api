@@ -3,7 +3,7 @@ const Visitor = require("../model/visitorModel");
 const getMonthlyVisitors = async (req, res) => {
   try {
     const { year } = req.query;
-
+    if (isNaN(year)) return res.status(400).json({ message: 'Invalid year' });
     const startOfYear = new Date(year, 0, 1);
     const endOfYear = new Date(year, 11, 31);
 

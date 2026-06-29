@@ -3,7 +3,7 @@ const RecentlyViewed = require("../model/recentlyviewesModel");
 const generateMetaHtml = require('../utils/generateMetaHtml');
 const mongoose = require("mongoose");
 const streamifier = require('streamifier');
-
+const { clearCache } = require("../middleware/cache");
 
 const cloudinary = require("../lib/cloudinary");
 
@@ -21,12 +21,12 @@ const createProduct = async (req, res, next) => {
       computerProperty,
     } = req.body;
     // :white_check_mark: Basic validation
-    if (!name || !brand || !price || !category) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill Name, Brand, Price, and Category fields.",
-      });
-    }
+    // if (!name || !brand || !price || !category) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Please fill Name, Brand, Price, and Category fields.",
+    //   });
+    // }
     // :white_check_mark: Validate images
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -97,7 +97,9 @@ const createProduct = async (req, res, next) => {
     // });
     console.log('main-product', mainProduct);
     // console.log('general', generalProduct);
-
+    // Clear the product list cache so the new product shows up immediately
+    await clearCache("/api/v1/product");
+    await clearCache("/api/v1/product/filter/all");
     return res.status(201).json({
       success: true,
       message: "Product created successfully",
@@ -374,6 +376,9 @@ const updateProduct = async (req, res, next) => {
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
     });
+    // Clear both the list cache and this specific product's cache
+    await clearCache("/api/v1/product");
+    await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ newUpdateProduct });
   } catch (error) {
     console.error("Update product error:", error);
@@ -419,6 +424,8 @@ const updateProductImage = async (req, res) => {
       { images: imagesBuffer },
       { new: true }
     );
+    await clearCache("/api/v1/product");
+    await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ success: true, newUpdateProduct });
   } catch (error) {
     console.error("Update image error:", error);
@@ -433,6 +440,8 @@ const deleteProduct = async (req, res) => {
       return res.status(404).send("Id not found");
     }
     await Product.findByIdAndDelete(product);
+    await clearCache("/api/v1/product");
+    await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ message: "Product Successfully Deleted" });
   } catch (error) {
     console.log(error);

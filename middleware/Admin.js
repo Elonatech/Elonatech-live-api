@@ -18,4 +18,14 @@ const verifyToken = (req, res, next) => {
   return next();
 };
 
-module.exports = verifyToken;
+
+const verifySuperAdmin = (req, res, next) => {
+  verifyToken(req, res, () => {
+    if (req.user?.role != "superAdmin") {
+      return res.status(403).send("Super Admin access is required")
+    }
+    next();
+  });
+};
+
+module.exports = { verifyToken, verifySuperAdmin };

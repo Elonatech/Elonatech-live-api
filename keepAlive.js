@@ -2,7 +2,7 @@
 // keepAlive.js
 const http = require("http");
 const https = require("https");
-const url = require("url");
+// const url = require("url");
 
 const baseUrl = process.env.BASEURL || `http://localhost:8000`;
 
@@ -12,7 +12,7 @@ const pingServer = () => {
     return;
   }
 
-  const parsedUrl = url.parse(baseUrl);
+  const parsedUrl = new URL (baseUrl);
   const protocol = parsedUrl.protocol === "https:" ? https : http;
   const target = `${baseUrl}/api/v2/ping`;
 

@@ -2,6 +2,7 @@ const Blog = require("../model/blogModel");
 const cloudinary = require("../lib/cloudinary");
 const mongoose = require("mongoose");
 const streamifier = require('streamifier');
+const { clearCache } = require("../middleware/cache");
 
 const createBlog = async (req, res) => {
   try {
@@ -16,9 +17,9 @@ const createBlog = async (req, res) => {
       }
     }
 
-    if (!title || !description || !author || !category || !category.length) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    // if (!title || !description || !author || !category || !category.length) {
+    //   return res.status(400).json({ message: "All fields are required" });
+    // }
 
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -51,6 +52,7 @@ const createBlog = async (req, res) => {
 
     console.log('newBlog', newBlog);
 
+    await clearCache("/api/v1/blog");
     return res.status(201).json({
       message: "Blog Created Successfully",
       data: newBlog,
@@ -254,6 +256,8 @@ const updateBlogId = async (req, res) => {
     };
 
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, data, { new: true });
+    await clearCache("/api/v1/blog");
+    await clearCache(`/api/v1/blog/${req.params.id}`);
     res.status(200).json({ success: true, data: updatedBlog });
   } catch (error) {
     console.error("Error updating blog:", error);
@@ -277,6 +281,8 @@ const deleteBlogId = async (req, res) => {
 
     await cloudinary.uploader.destroy(blog.cloudinary_id)
     await blog.deleteOne()
+    await clearCache("/api/v1/blog");
+    await clearCache(`/api/v1/blog/${req.params.id}`);
     return res.status(200).json({ message: "Blog Successfully Deleted" });
   } catch (error) {
     console.error("Delete blog error:", error);

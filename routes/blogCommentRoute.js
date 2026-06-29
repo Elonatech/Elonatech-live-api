@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Comment = require('../model/blogCommentModel');
 const Reply = require('../model/blogReplyModel');
-const verifyToken = require('../middleware/Admin');
+const {verifyToken} = require('../middleware/Admin');
 
 // Get comments for a specific blog post
 router.get('/comments/:blogId', async (req, res) => {

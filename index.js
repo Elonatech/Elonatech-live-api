@@ -21,7 +21,7 @@ const commentRoutes = require("./routes/blogCommentRoute");
 // const replyRoutes = require("./routes/blogCommentRoute");
 const renderApi = require("./routes/ping");
 const sitemapRoute = require("./routes/sitemapRoute");
-
+const cookieParser = require("cookie-parser");
 
 const pingServer = require("./keepAlive");
 
@@ -39,6 +39,8 @@ app.use(
     methods: ["GET", "POST", "DELETE", "OPTIONS", "PUT", "PATCH"],
   })
 );
+
+app.use(cookieParser());
 
 app.use(logVisitor);
 app.use(express.json({ limit: "5mb" }));
@@ -136,7 +138,8 @@ app.use("/api/v1/visitors", visitorRoutes);
 app.use("/api/v1", commentRoutes);
 // app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
-
+// Parses cookies from incoming requests so req.cookies is available
+// Must come before any route that reads cookies (e.g. /refresh, /logout)
 
 app.use("/sitemap.xml", sitemapRoute);
 
