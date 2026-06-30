@@ -3,6 +3,9 @@ const Product = require("../model/productModel");
 
 const SITE = "https://elonatech.com.ng";
 const TODAY = new Date().toISOString().split("T")[0];
+// Fixed date for static pages — only update this when you actually change a page
+// Using TODAY caused Google to see lastmod change on every request, making it untrustworthy
+const STATIC_LASTMOD = "2025-01-01";
 
 // Static pages that don't change often
 const staticPages = [
@@ -102,7 +105,7 @@ const getSitemap = async (req, res) => {
     ]);
 
     const staticEntries = staticPages
-      .map(p => urlEntry({ ...p, loc: `${SITE}${p.loc}`, lastmod: TODAY }))
+      .map(p => urlEntry({ ...p, loc: `${SITE}${p.loc}`, lastmod: STATIC_LASTMOD }))
       .join("");
 
     const blogEntries = blogs
