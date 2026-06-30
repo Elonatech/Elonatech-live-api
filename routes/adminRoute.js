@@ -14,7 +14,7 @@ const { loginSchema, createAdminSchema } = require("../validators/adminValidator
 // Protects against brute force password attacks
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 15,
   message: { message: "Too many login attempts. Please try again in 15 minutes." }
 });
 

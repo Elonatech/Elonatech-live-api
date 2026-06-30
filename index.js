@@ -1,5 +1,7 @@
 const express = require("express");
 const app = express();
+// Tell Express to trust Render's proxy so rate limiting works correctly
+app.set('trust proxy', 1);
 require("dotenv").config();
 const cors = require("cors");
 const compression = require("compression");

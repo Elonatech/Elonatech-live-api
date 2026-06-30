@@ -1,9 +1,8 @@
 const Admin = require("../model/adminModel");
 const bcrypt = require("bcryptjs");
-const { token_key } = require("../config/key");
+const config = require("../config/key");
 const jwt = require("jsonwebtoken");
-const RefreshToken = require("../model/refreshTokenModel")
-const { refresh_token_key } = require("../config/key")
+const RefreshToken = require("../model/refreshTokenModel");
 // Sign Up
 const adminRegister = async (req, res) => {
   try {
@@ -49,8 +48,8 @@ const adminLogin = async (req, res) => {
 
     const payload = { id: admin._id, role: admin.role };
     // Admin jwt
-    const accessToken = jwt.sign(payload, token_key, { expiresIn: "15m" });
-    const refreshToken = jwt.sign(payload, refresh_token_key, { expiresIn: "7d" });
+    const accessToken = jwt.sign(payload, config.token_key, { expiresIn: "15m" });
+    const refreshToken = jwt.sign(payload,  config.refresh_token_key, { expiresIn: "7d" });
 
 
     // Save refresh token to DB
@@ -107,7 +106,7 @@ const refreshAccessToken = async (req, res) => {
     // Verify the token signature and expiry
     let decoded;
     try {
-      decoded = jwt.verify(token, refresh_token_key);
+      decoded = jwt.verify(token, config.refresh_token_key);
     } catch (err) {
       return res.status(401).json({ message: "Invalid or expired refresh token" });
     }
@@ -122,8 +121,8 @@ const refreshAccessToken = async (req, res) => {
     await RefreshToken.deleteOne({ token });
 
     const payload = { id: decoded.id, role: decoded.role };
-    const newAccessToken = jwt.sign(payload, token_key, { expiresIn: "15m" });
-    const newRefreshToken = jwt.sign(payload, refresh_token_key, { expiresIn: "7d" });
+    const newAccessToken = jwt.sign(payload, config.token_key, { expiresIn: "15m" });
+    const newRefreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
 
     await RefreshToken.create({
       adminId: decoded.id,
