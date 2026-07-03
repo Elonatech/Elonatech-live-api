@@ -16,6 +16,11 @@ const loginSchema = z.object({
 
 // Create admin schema — same as login but role must be one of the two allowed values
 const createAdminSchema = z.object({
+  name: z
+    .string({ required_error: "Name is required" })
+    .trim()
+    .min(2, "Name must be at least 2 characters"),
+
   email: z
     .string({ required_error: "Email is required" })
     .trim()

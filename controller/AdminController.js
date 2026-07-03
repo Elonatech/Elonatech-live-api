@@ -159,12 +159,9 @@ const logout = async (req, res) => {
 
 const createAdmin = async (req, res) => {
   try {
-    const { email, password, role } = req.body
-    // if (!email || !password || !role) {
-    //   return res.status(400).json({ success: false, message: "Please fill all required fields" })
-    // }
+    const { name, email, password, role } = req.body
     const encryptedPassword = await bcrypt.hash(password, 10)
-    const admin = await Admin.create({ email, password: encryptedPassword, role })
+    const admin = await Admin.create({ name, email, password: encryptedPassword, role })
     return res.status(201).json({ success: true, message: "Admin created successfully", data: admin })
   } catch (error) {
     logger.error("Create admin error", { error });
@@ -174,7 +171,7 @@ const createAdmin = async (req, res) => {
 
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find({}, "email role createdAt");
+    const admins = await Admin.find({}, "name email role createdAt");
     return res.status(200).json({ admins });
   } catch (error) {
     logger.error("Get all admins error", { error });
