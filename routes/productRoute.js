@@ -1,3 +1,183 @@
+/**
+ * @swagger
+ * tags:
+ *   name: Products
+ *   description: Product catalogue — list, filter, create, update, delete
+ */
+
+/**
+ * @swagger
+ * /api/v1/product:
+ *   get:
+ *     summary: Get all products
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Array of all products
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/computers:
+ *   get:
+ *     summary: Get all computer products
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Array of computer products
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/filter:
+ *   get:
+ *     summary: Filter products by category, brand, price etc.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema: { type: string }
+ *       - in: query
+ *         name: brand
+ *         schema: { type: string }
+ *       - in: query
+ *         name: minPrice
+ *         schema: { type: number }
+ *       - in: query
+ *         name: maxPrice
+ *         schema: { type: number }
+ *     responses:
+ *       200:
+ *         description: Filtered product list
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/brand:
+ *   get:
+ *     summary: Get unique brands and price range
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Brands and min/max price
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/{id}:
+ *   get:
+ *     summary: Get a product by ID or slug
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: MongoDB ObjectId or slug string
+ *     responses:
+ *       200:
+ *         description: Product object
+ *       404:
+ *         description: Product not found
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/{id}/related:
+ *   get:
+ *     summary: Get related products for a given product
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of related products
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/create:
+ *   post:
+ *     summary: Create a new product (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - TokenAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [name, price, category]
+ *             properties:
+ *               name: { type: string }
+ *               price: { type: number }
+ *               category: { type: string }
+ *               brand: { type: string }
+ *               description: { type: string }
+ *               quantity: { type: number }
+ *               images:
+ *                 type: array
+ *                 items: { type: string, format: binary }
+ *     responses:
+ *       201:
+ *         description: Product created
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/{id}/update:
+ *   put:
+ *     summary: Update product details (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               price: { type: number }
+ *               category: { type: string }
+ *     responses:
+ *       200:
+ *         description: Product updated
+ */
+
+/**
+ * @swagger
+ * /api/v1/product/{id}:
+ *   delete:
+ *     summary: Delete a product (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Product deleted
+ *       404:
+ *         description: Product not found
+ */
+
 const express = require("express");
 const router = express.Router();
 const productController = require("../controller/productController");

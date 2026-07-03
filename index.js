@@ -24,7 +24,7 @@ const commentRoutes = require("./routes/blogCommentRoute");
 const renderApi = require("./routes/ping");
 const sitemapRoute = require("./routes/sitemapRoute");
 const cookieParser = require("cookie-parser");
-
+const logger = require("./lib/logger");
 const pingServer = require("./keepAlive");
 
 const PORT = process.env.PORT || 8000;
@@ -140,6 +140,14 @@ app.use("/api/v1/visitors", visitorRoutes);
 app.use("/api/v1", commentRoutes);
 // app.use("/api/v1", replyRoutes);
 app.use("/api/v2", renderApi);
+
+// Swagger UI — only available in development so docs aren't exposed in production
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
+if (process.env.NODE_ENV !== "production") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  logger.info("Swagger UI available at http://localhost:8000/api-docs");
+}
 // Parses cookies from incoming requests so req.cookies is available
 // Must come before any route that reads cookies (e.g. /refresh, /logout)
 
@@ -149,7 +157,7 @@ app.get("/", (req, res) => res.send("ELONATECH API RUNNING 🚀"));
 
 
 app.use((err, req, res, next) => {
-  console.error("GlobalError:", err);
+  logger.error("GlobalError:", { error: err.message, stack: err.stack });
   if (err.message === "Unsupported file format") {
     return res.status(400).json({ message: err.message });
   }
@@ -158,6 +166,6 @@ app.use((err, req, res, next) => {
 
 
 connectMongodb().then(() => {
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  app.listen(PORT, () => logger.info(`🚀 Server running on port ${PORT}`));
   pingServer();
 });

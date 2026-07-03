@@ -1,6 +1,154 @@
-// This file defines the routes for admin-related operations, including registration, login, and verification. It uses Express.js to create a router and connects the routes to the corresponding controller functions in AdminController. The verify-admin route is protected by the verifyToken middleware to ensure that only authenticated admins can access it.
-// adminRoute.js
-// routes\adminRoute.js
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Admin authentication — login, token refresh, logout, and admin management
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Login as admin
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: admin@elonatech.com.ng
+ *               password:
+ *                 type: string
+ *                 example: secret123
+ *     responses:
+ *       200:
+ *         description: Login successful — returns accessToken and sets httpOnly refresh cookie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 email: { type: string }
+ *                 access: { type: string, description: "JWT access token (15 min)" }
+ *                 role: { type: string }
+ *       400:
+ *         description: Invalid email or password
+ *       429:
+ *         description: Too many login attempts (rate limited)
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/refresh:
+ *   post:
+ *     summary: Get a new access token using the refresh cookie
+ *     tags: [Auth]
+ *     description: Reads the httpOnly refreshToken cookie. Rotates the token on each call.
+ *     responses:
+ *       200:
+ *         description: New access token issued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access: { type: string }
+ *       401:
+ *         description: No refresh token, invalid, or revoked
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/logout:
+ *   post:
+ *     summary: Logout — revokes refresh token and clears cookie
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/verify-admin:
+ *   post:
+ *     summary: Verify the current JWT is valid and belongs to an admin
+ *     tags: [Auth]
+ *     security:
+ *       - TokenAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       401:
+ *         description: Token missing or invalid
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/create:
+ *   post:
+ *     summary: Create a new admin (super admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - TokenAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, role]
+ *             properties:
+ *               email: { type: string }
+ *               password: { type: string }
+ *               role: { type: string, enum: [admin, superAdmin] }
+ *     responses:
+ *       201:
+ *         description: Admin created
+ *       403:
+ *         description: Forbidden — super admin only
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/all:
+ *   get:
+ *     summary: Get all admins (super admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - TokenAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all admin accounts
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/{id}:
+ *   delete:
+ *     summary: Delete an admin by ID (super admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Admin deleted
+ *       403:
+ *         description: Cannot delete super admin
+ *       404:
+ *         description: Admin not found
+ */
 
 const rateLimit = require("express-rate-limit");
 const express = require("express");

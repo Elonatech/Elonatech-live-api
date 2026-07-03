@@ -3,6 +3,8 @@ const cloudinary = require("../lib/cloudinary");
 const mongoose = require("mongoose");
 const streamifier = require('streamifier');
 const { clearCache } = require("../middleware/cache");
+const logger = require("../lib/logger");
+
 
 const createBlog = async (req, res) => {
   try {
@@ -16,10 +18,6 @@ const createBlog = async (req, res) => {
         category = [category];
       }
     }
-
-    // if (!title || !description || !author || !category || !category.length) {
-    //   return res.status(400).json({ message: "All fields are required" });
-    // }
 
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
@@ -50,7 +48,7 @@ const createBlog = async (req, res) => {
       cloudinary_id: result.secure_url,
     });
 
-    console.log('newBlog', newBlog);
+    logger.info("Blog created", { blogId: newBlog._id, title: newBlog.title });
 
     await clearCache("/api/v1/blog");
     return res.status(201).json({
@@ -58,7 +56,7 @@ const createBlog = async (req, res) => {
       data: newBlog,
     });
   } catch (error) {
-    console.error("CreateBlogError:", error);
+    logger.error("CreateBlogError:", { error });
     return res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
@@ -72,7 +70,7 @@ const getBlogs = async (req, res) => {
     const getAllBlogs = await Blog.find().sort({ createdAt: -1 });
     return res.status(200).json({ success: true, count: getAllBlogs.length, getAllBlogs });
   } catch (error) {
-    console.error("Get blogs error:", error);
+    logger.error("Get blogs error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -81,13 +79,9 @@ const getBlogs = async (req, res) => {
 const getTrends = async (req, res) => {
   try {
     const getAllTrends = await Blog.find({ category: "trends" }).sort({ createdAt: -1 });
-
-    // if (!getAllTrends) {
-    //   return res.status(400).send("Bad request");
-    // }
     return res.status(200).json({ success: true, count: getAllTrends.length, getAllTrends });
   } catch (error) {
-    console.error("Get Trends error:", error);
+    logger.error("Get Trends error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -97,12 +91,10 @@ const getNews = async (req, res) => {
   try {
     const getAllNews = await Blog.find({ category: "news" }).sort({ createdAt: -1 });
 
-    // if (!getAllNews) {
-    //   return res.status(400).send("Bad request");
-    // }
+   
     return res.status(200).json({ success: true, count: getAllNews.length, getAllNews });
   } catch (error) {
-    console.error("Get News error:", error);
+    logger.error("Get News error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -142,26 +134,10 @@ const getNewsById = async (req, res) => {
 
     return res.status(200).json(news);
   } catch (error) {
-    console.error(error);
+    logger.error("Get news by id error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
-
-// const getTrendsById = async (req, res) => {
-//   try {
-//     const { id } = req.params; // Extract ID from request parameters
-//     const trends = await Blog.findById(id); // Find news by ID
-
-//     if (!trends) {
-//       return res.status(404).send("news not found");
-//     }
-
-//     return res.status(200).json(trends);
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).send("Server Error");
-//   }
-// };
 
 // Get Blog By Id
 
@@ -182,22 +158,10 @@ const getTrendsById = async (req, res) => {
 
     return res.status(200).json(trends);
   } catch (error) {
-    console.error(error);
+    logger.error("Get trends by id error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
-
-
-// const getBlogId = async (req, res) => {
-//   // Find Blog by Id
-//   const getId = await Blog.findById(req.params.id);
-//   if (!getId) {
-//     return res.status(404).send({ message: "Blog Not Found" });
-//   }
-//   const getBlogById = await Blog.findById(getId);
-//   return res.status(200).json({ getBlogById });
-// };
-
 
 const getBlogId = async (req, res) => {
   try {
@@ -216,14 +180,14 @@ const getBlogId = async (req, res) => {
 
     return res.status(200).json(blog);
   } catch (error) {
-    console.error(error);
+    logger.error("Get blog by id error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
 
 const updateBlogId = async (req, res) => {
   try {
-    console.log("REQ FILE:", req.file);
+    logger.info("REQ FILE:", { file: req.file });
 
     let blog = await Blog.findById(req.params.id);
     if (!blog) {
@@ -260,7 +224,7 @@ const updateBlogId = async (req, res) => {
     await clearCache(`/api/v1/blog/${req.params.id}`);
     res.status(200).json({ success: true, data: updatedBlog });
   } catch (error) {
-    console.error("Error updating blog:", error);
+    logger.error("Update blog error", { error });
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
   }
 };
@@ -285,7 +249,7 @@ const deleteBlogId = async (req, res) => {
     await clearCache(`/api/v1/blog/${req.params.id}`);
     return res.status(200).json({ message: "Blog Successfully Deleted" });
   } catch (error) {
-    console.error("Delete blog error:", error);
+    logger.error("Delete blog error", { error });
     return res.status(500).json({ message: "Server Error" });
 
   }

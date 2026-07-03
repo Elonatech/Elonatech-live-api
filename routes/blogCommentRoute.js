@@ -1,3 +1,134 @@
+﻿/**
+ * @swagger
+ * tags:
+ *   name: Comments
+ *   description: Blog comments and replies
+ */
+
+/**
+ * @swagger
+ * /api/v1/comments/{blogId}:
+ *   get:
+ *     summary: Get all comments for a blog post
+ *     tags: [Comments]
+ *     parameters:
+ *       - in: path
+ *         name: blogId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of comments
+ */
+
+/**
+ * @swagger
+ * /api/v1/comments:
+ *   post:
+ *     summary: Create a new comment on a blog post
+ *     tags: [Comments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [blogId, content, userName, gender]
+ *             properties:
+ *               blogId: { type: string }
+ *               content: { type: string }
+ *               userName: { type: string }
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female]
+ *     responses:
+ *       201:
+ *         description: Comment created
+ *       400:
+ *         description: Validation error
+ */
+
+/**
+ * @swagger
+ * /api/v1/comments/{id}:
+ *   delete:
+ *     summary: Delete a comment and its replies (admin only)
+ *     tags: [Comments]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Comment and replies deleted
+ *       404:
+ *         description: Comment not found
+ */
+
+/**
+ * @swagger
+ * /api/v1/replies/{commentId}:
+ *   get:
+ *     summary: Get all replies for a comment
+ *     tags: [Comments]
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of replies
+ */
+
+/**
+ * @swagger
+ * /api/v1/replies:
+ *   post:
+ *     summary: Create a reply to a comment
+ *     tags: [Comments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [blogId, commentId, content, userName, gender]
+ *             properties:
+ *               blogId: { type: string }
+ *               commentId: { type: string }
+ *               content: { type: string }
+ *               userName: { type: string }
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female]
+ *     responses:
+ *       201:
+ *         description: Reply created
+ */
+
+/**
+ * @swagger
+ * /api/v1/replies/{id}:
+ *   delete:
+ *     summary: Delete a reply (admin only)
+ *     tags: [Comments]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Reply deleted
+ *       404:
+ *         description: Reply not found
+ */
 const express = require('express');
 const router = express.Router();
 const Comment = require('../model/blogCommentModel');

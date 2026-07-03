@@ -7,12 +7,20 @@ const createBlogSchema = z.object({
 
   author: z.string({ required_error: "Author is required" }).trim().min(1, "Author is required"),
 
-  // category comes in as a JSON string from form-data, so we accept string and parse it
-  // The controller already handles this parsing
-  category: z.union([
-    z.enum(["blog", "trends", "news"], { errorMap: () => ({ message: "Category must be blog, trends, or news" }) }),
-    z.array(z.enum(["blog", "trends", "news"], { errorMap: () => ({ message: "Category must be blog, trends, or news" }) })).min(1),
-  ]),
+  // category arrives from form-data as a JSON string e.g. '["trends"]'
+  // preprocess parses it first so the enum check gets the real value
+  category: z.preprocess(
+    (val) => {
+      if (typeof val === "string") {
+        try { return JSON.parse(val); } catch { return val; }
+      }
+      return val;
+    },
+    z.union([
+      z.enum(["blog", "trends", "news"], { errorMap: () => ({ message: "Category must be blog, trends, or news" }) }),
+      z.array(z.enum(["blog", "trends", "news"], { errorMap: () => ({ message: "Category must be blog, trends, or news" }) })).min(1),
+    ])
+  ),
 });
 
 // Update allows partial fields

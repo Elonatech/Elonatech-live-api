@@ -3,15 +3,13 @@ const bcrypt = require("bcryptjs");
 const config = require("../config/key");
 const jwt = require("jsonwebtoken");
 const RefreshToken = require("../model/refreshTokenModel");
+const logger = require("../lib/logger");
+
 // Sign Up
 const adminRegister = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // if (!email || !password) {
-    //   return res.status(400).json({ message: "Fill All Field" });
-    // }
-    // check if admin already exist
     const oldadmin = await Admin.findOne({ email });
     if (oldadmin) {
       return res.status(409).json({ message: "Admin Already Exist" });
@@ -21,7 +19,7 @@ const adminRegister = async (req, res) => {
     const admin = await Admin.create({ email, password: encryptedPassword });
     return res.status(201).json({ admin });
   } catch (error) {
-    console.error("Register error:", error);
+    logger.error("Register error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -30,9 +28,6 @@ const adminRegister = async (req, res) => {
 const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    // if (!email || !password) {
-    //   return res.status(400).json({ message: "Fill All Required Fields" });
-    // }
 
     // check if Admin exist
     const admin = await Admin.findOne({ email: email });
@@ -49,7 +44,7 @@ const adminLogin = async (req, res) => {
     const payload = { id: admin._id, role: admin.role };
     // Admin jwt
     const accessToken = jwt.sign(payload, config.token_key, { expiresIn: "15m" });
-    const refreshToken = jwt.sign(payload,  config.refresh_token_key, { expiresIn: "7d" });
+    const refreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
 
 
     // Save refresh token to DB
@@ -71,7 +66,7 @@ const adminLogin = async (req, res) => {
       .status(200)
       .json({ message: "Login Successful", email: admin.email, access: accessToken, role: admin.role });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -91,7 +86,7 @@ const verifyAdmin = async (req, res) => {
     // Return the admin status
     return res.status(200).json({ isAdmin: true });
   } catch (error) {
-    console.error("Error verifying admin:", error);
+    logger.error("Verify admin error", { error });
     return res.status(500).json({ isAdmin: false, message: "Error verifying admin" });
   }
 };
@@ -139,7 +134,7 @@ const refreshAccessToken = async (req, res) => {
 
     return res.status(200).json({ access: newAccessToken });
   } catch (error) {
-    console.error("Refresh error:", error);
+    logger.error("Refresh token error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -157,7 +152,7 @@ const logout = async (req, res) => {
     });
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.error("Logout error:", error);
+    logger.error("Logout error:", error);
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -172,8 +167,7 @@ const createAdmin = async (req, res) => {
     const admin = await Admin.create({ email, password: encryptedPassword, role })
     return res.status(201).json({ success: true, message: "Admin created successfully", data: admin })
   } catch (error) {
-    console.log(error);
-
+    logger.error("Create admin error", { error });
     return res.status(500).json({ sucess: false, message: "Internal Server Error" })
   }
 }
@@ -183,8 +177,7 @@ const getAllAdmins = async (req, res) => {
     const admins = await Admin.find({}, "email role createdAt");
     return res.status(200).json({ admins });
   } catch (error) {
-    console.error(error);
-
+    logger.error("Get all admins error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -199,6 +192,7 @@ const deleteAdmin = async (req, res) => {
     await Admin.findByIdAndDelete(req.params.id);
     return res.status(200).json({ message: "Admin deleted successfully" });
   } catch (error) {
+    logger.error("Delete admin error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };

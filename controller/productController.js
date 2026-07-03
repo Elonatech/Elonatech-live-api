@@ -4,12 +4,12 @@ const generateMetaHtml = require('../utils/generateMetaHtml');
 const mongoose = require("mongoose");
 const streamifier = require('streamifier');
 const { clearCache } = require("../middleware/cache");
-
+const logger = require("../lib/logger");
 const cloudinary = require("../lib/cloudinary");
 
 const createProduct = async (req, res, next) => {
   try {
-    console.log(":camera_with_flash: req.files:", req.files);
+    logger.debug("Incoming files", { count: req.files?.length });
     const {
       name,
       description,
@@ -20,13 +20,7 @@ const createProduct = async (req, res, next) => {
       category,
       computerProperty,
     } = req.body;
-    // :white_check_mark: Basic validation
-    // if (!name || !brand || !price || !category) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Please fill Name, Brand, Price, and Category fields.",
-    //   });
-    // }
+
     // :white_check_mark: Validate images
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -107,7 +101,7 @@ const createProduct = async (req, res, next) => {
       // generalCategory: generalProduct,
     });
   } catch (error) {
-    console.error("Error creating product:", error);
+    logger.error("Create product error", { error });
     next(error);
   }
 };
@@ -115,9 +109,7 @@ const createProduct = async (req, res, next) => {
 const getAllProducts = async (req, res, next) => {
   try {
     const getAllProducts = await Product.find();
-    // if (!getAllProducts) {
-    //   return res.status(400).send("Bad request");
-    // }
+
     return res.status(200).json({ success: true, count: getAllProducts.length, getAllProducts });
   } catch (error) {
     console.error("Get all products error:", error);
@@ -269,7 +261,7 @@ const getAllProductsByFilterForAllCategories = async (req, res) => {
       maxPrice: updatedMaxPrice
     });
   } catch (error) {
-    console.error("Error:", error.message);
+    logger.error("Get products by filter error", { error });
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -299,7 +291,7 @@ const getUniqueBrandsAndPriceRange = async (req, res) => {
       maxPrice,
     });
   } catch (error) {
-    console.error("Error:", error.message);
+    logger.error("Error:", error.message);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -381,7 +373,7 @@ const updateProduct = async (req, res, next) => {
     await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ newUpdateProduct });
   } catch (error) {
-    console.error("Update product error:", error);
+    logger.error("Update product error:", error);
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -428,7 +420,7 @@ const updateProductImage = async (req, res) => {
     await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ success: true, newUpdateProduct });
   } catch (error) {
-    console.error("Update image error:", error);
+    logger.error("Update product image error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -444,7 +436,8 @@ const deleteProduct = async (req, res) => {
     await clearCache(`/api/v1/product/${req.params.id}`);
     return res.status(200).json({ message: "Product Successfully Deleted" });
   } catch (error) {
-    console.log(error);
+    logger.error("Delete product error", { error });
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -535,7 +528,7 @@ const getProductById = async (req, res) => {
 
     return res.status(200).json({ product });
   } catch (error) {
-    console.error(error);
+    logger.error("Get product by id error", { error });
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -555,7 +548,7 @@ const getRelatedProducts = async (req, res) => {
 
     res.status(200).json({ success: true, relatedProducts });
   } catch (error) {
-    console.error(error);
+    logger.error("Get related products error", { error });
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -574,7 +567,7 @@ const getRecentlyViewedProducts = async (req, res) => {
       recentlyViewedProducts: recentlyViewed.products
     });
   } catch (error) {
-    console.error(error);
+    logger.error("Get recently viewed products error", { error });
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -607,7 +600,8 @@ const updateRecentlyViewed = async (productId) => {
       `Current number of recently viewed products: ${recentlyViewed.products.length}`
     );
   } catch (error) {
-    console.error("Error updating recently viewed products:", error);
+    logger.error("Error updating recently viewed products:", { error });
+    return res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -642,7 +636,7 @@ const getNextProduct = async (req, res) => {
 
     res.status(200).json({ nextProduct });
   } catch (error) {
-    console.error(error);
+    logger.error("Get next product error", { error });
     res.status(500).json({ message: "Server error" });
   }
 };

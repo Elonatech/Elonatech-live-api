@@ -1,4 +1,6 @@
 const redis = require("../lib/redis");
+const logger = require("../lib/logger");
+
 
 // Cache middleware factory — pass in how many seconds the cache should live
 // Example: cache(60) caches the response for 60 seconds
@@ -15,13 +17,13 @@ const cache = (ttl = 60) => async (req, res, next) => {
 
     if (cached) {
       // Cache HIT — return the stored response immediately, DB never touched
-      console.log(`Cache HIT: ${key}`);
+      logger.debug(`Cache HIT: ${key}`);
       return res.status(200).json(cached);
     }
 
     // Cache MISS — no cached data found, we need to hit the DB
     // We intercept res.json() so we can save the response to Redis before sending it
-    console.log(`Cache MISS: ${key}`);
+    logger.debug(`Cache MISS: ${key}`);
     const originalJson = res.json.bind(res);
 
     res.json = async (data) => {
@@ -36,7 +38,8 @@ const cache = (ttl = 60) => async (req, res, next) => {
     next();
   } catch (error) {
     // If Redis is down, don't crash the app — just skip the cache and hit the DB
-    console.error("Cache error:", error.message);
+
+    logger.error("Cache error", { error: error.message });
     next();
   }
 };
@@ -47,9 +50,9 @@ const cache = (ttl = 60) => async (req, res, next) => {
 const clearCache = async (key) => {
   try {
     await redis.del(key);
-    console.log(`Cache cleared for: ${key}`);
+    logger.info(`Cache cleared for: ${key}`);
   } catch (error) {
-    console.error("Clear cache error:", error.message);
+    logger.error("Clear cache error:", { error: error.message });
   }
 };
 
