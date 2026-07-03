@@ -7,9 +7,10 @@ const logger = require("../lib/logger");
 const cache = (ttl = 60) => async (req, res, next) => {
 
   // Build a unique cache key from the request URL including any query params
-  // e.g. /api/v1/product?category=Computer becomes that full string as the key
-  // This means /product?category=Computer and /product?category=Printer are cached separately
-  const key = req.originalUrl;
+  // Strip trailing slash so /api/v1/blog and /api/v1/blog/ resolve to the same key
+  // This ensures clearCache("/api/v1/blog") works regardless of how the frontend calls it
+  const raw = req.originalUrl;
+  const key = raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
 
   try {
     // Check if we already have a cached response for this URL
