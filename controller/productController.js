@@ -6,6 +6,7 @@ const streamifier = require('streamifier');
 const { clearCache } = require("../middleware/cache");
 const logger = require("../lib/logger");
 const cloudinary = require("../lib/cloudinary");
+const logAudit = require("../lib/logAudit");
 
 const createProduct = async (req, res, next) => {
   try {
@@ -89,11 +90,9 @@ const createProduct = async (req, res, next) => {
     //   ...baseData,
     //   category: "Products",
     // });
-    console.log('main-product', mainProduct);
-    // console.log('general', generalProduct);
-    // Clear the product list cache so the new product shows up immediately
     await clearCache("/api/v1/product");
     await clearCache("/api/v1/product/filter/all");
+    await logAudit({ action: "CREATE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Created product: "${name}"` });
     return res.status(201).json({
       success: true,
       message: "Product created successfully",
@@ -368,9 +367,9 @@ const updateProduct = async (req, res, next) => {
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
     });
-    // Clear both the list cache and this specific product's cache
     await clearCache("/api/v1/product");
     await clearCache(`/api/v1/product/${req.params.id}`);
+    await logAudit({ action: "UPDATE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Updated product: "${newUpdateProduct.name}"` });
     return res.status(200).json({ newUpdateProduct });
   } catch (error) {
     logger.error("Update product error:", error);
@@ -418,6 +417,7 @@ const updateProductImage = async (req, res) => {
     );
     await clearCache("/api/v1/product");
     await clearCache(`/api/v1/product/${req.params.id}`);
+    await logAudit({ action: "UPDATE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Updated images for product: "${newUpdateProduct.name}"` });
     return res.status(200).json({ success: true, newUpdateProduct });
   } catch (error) {
     logger.error("Update product image error", { error });
@@ -431,9 +431,11 @@ const deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).send("Id not found");
     }
+    const productName = product.name;
     await Product.findByIdAndDelete(product);
     await clearCache("/api/v1/product");
     await clearCache(`/api/v1/product/${req.params.id}`);
+    await logAudit({ action: "DELETE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Deleted product: "${productName}"` });
     return res.status(200).json({ message: "Product Successfully Deleted" });
   } catch (error) {
     logger.error("Delete product error", { error });

@@ -5,6 +5,10 @@ const AdminSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
+  isMaster: {
+    type: Boolean,
+    default: false
+  },
   email: {
     type: String,
     required: true,
@@ -19,8 +23,17 @@ const AdminSchema = new mongoose.Schema({
     required: true,
     enum: ["admin", "superAdmin"],
     default: "admin"
+  },
+  totpSecret: {
+    type: String,
+    default: ""
+  },
+
+  totpEnabled: {
+    type: Boolean,
+    default: false
   }
-});
+}, { timestamps: true });
 
 const Admin = mongoose.model("Admin", AdminSchema);
 module.exports = Admin;

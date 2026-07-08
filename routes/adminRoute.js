@@ -132,7 +132,7 @@
  * @swagger
  * /api/v1/auth/{id}:
  *   delete:
- *     summary: Delete an admin by ID (super admin only)
+ *     summary: Delete an admin by ID (super admin only; only master can delete other super admins)
  *     tags: [Auth]
  *     security:
  *       - TokenAuth: []
@@ -145,7 +145,42 @@
  *       200:
  *         description: Admin deleted
  *       403:
- *         description: Cannot delete super admin
+ *         description: Cannot delete super admin / own account
+ *       404:
+ *         description: Admin not found
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/{id}:
+ *   patch:
+ *     summary: Update an admin's details — name, email, password, role (super admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - TokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, example: "John Doe" }
+ *               email: { type: string, example: "john@elonatech.com.ng" }
+ *               password: { type: string, example: "newpassword123" }
+ *               role: { type: string, enum: [admin, superAdmin] }
+ *     responses:
+ *       200:
+ *         description: Admin updated successfully
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already in use
  *       404:
  *         description: Admin not found
  */
@@ -154,6 +189,8 @@ const rateLimit = require("express-rate-limit");
 const express = require("express");
 const router = express.Router();
 const AdminController = require("../controller/AdminController");
+const AuditController = require("../controller/AuditController");
+
 const { verifyToken, verifySuperAdmin } = require("../middleware/Admin");
 const validate = require("../middleware/validate");
 const { loginSchema, createAdminSchema } = require("../validators/adminValidators");
@@ -179,6 +216,9 @@ router.post("/register", verifySuperAdmin, AdminController.adminRegister);
 router.post("/create", verifySuperAdmin, validate(createAdminSchema), AdminController.createAdmin)
 router.get("/all", verifySuperAdmin, AdminController.getAllAdmins);
 router.delete("/:id", verifySuperAdmin, AdminController.deleteAdmin);
-
-
+router.patch("/:id", verifySuperAdmin, AdminController.updateAdmin);
+router.post("/totp/setup", verifyToken, AdminController.setupTotp);
+router.post("/totp/enable", verifyToken, AdminController.enableTotp);
+router.post("/totp/login", AdminController.verifyTotp);  // no auth middleware
+router.get("/audit", verifyToken, AuditController.getAuditLogs);
 module.exports = router;

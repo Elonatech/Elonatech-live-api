@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const streamifier = require('streamifier');
 const { clearCache } = require("../middleware/cache");
 const logger = require("../lib/logger");
+const logAudit = require("../lib/logAudit");
 
 
 const createBlog = async (req, res) => {
@@ -47,7 +48,7 @@ const createBlog = async (req, res) => {
       category,
       cloudinary_id: result.secure_url,
     });
-
+    await logAudit({ action: "CREATE_BLOG", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Created blog: "${title}"` });
     logger.info("Blog created", { blogId: newBlog._id, title: newBlog.title });
 
     await clearCache("/api/v1/blog");
@@ -67,7 +68,7 @@ const createBlog = async (req, res) => {
 // Get All Blogs
 const getBlogs = async (req, res) => {
   try {
-    const getAllBlogs = await Blog.find().sort({ createdAt: -1 });
+    const getAllBlogs = await Blog.find().sort({ createdAt: -1 }).select("-description");
     return res.status(200).json({ success: true, count: getAllBlogs.length, getAllBlogs });
   } catch (error) {
     logger.error("Get blogs error", { error });
@@ -91,7 +92,7 @@ const getNews = async (req, res) => {
   try {
     const getAllNews = await Blog.find({ category: "news" }).sort({ createdAt: -1 });
 
-   
+
     return res.status(200).json({ success: true, count: getAllNews.length, getAllNews });
   } catch (error) {
     logger.error("Get News error", { error });
@@ -119,7 +120,7 @@ const getNews = async (req, res) => {
 
 const getNewsById = async (req, res) => {
   try {
-    const identifier = req.params.id; ``
+    const identifier = req.params.id;
     let news;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
@@ -222,6 +223,7 @@ const updateBlogId = async (req, res) => {
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, data, { new: true });
     await clearCache("/api/v1/blog");
     await clearCache(`/api/v1/blog/${req.params.id}`);
+    await logAudit({ action: "UPDATE_BLOG", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Updated blog: "${updatedBlog.title}"` });
     res.status(200).json({ success: true, data: updatedBlog });
   } catch (error) {
     logger.error("Update blog error", { error });
@@ -243,10 +245,12 @@ const deleteBlogId = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" })
     }
 
+    const title = blog.title;
     await cloudinary.uploader.destroy(blog.cloudinary_id)
     await blog.deleteOne()
     await clearCache("/api/v1/blog");
     await clearCache(`/api/v1/blog/${req.params.id}`);
+    await logAudit({ action: "DELETE_BLOG", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Deleted blog: "${title}"` });
     return res.status(200).json({ message: "Blog Successfully Deleted" });
   } catch (error) {
     logger.error("Delete blog error", { error });

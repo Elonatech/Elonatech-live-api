@@ -40,10 +40,15 @@ const blogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-blogSchema.pre("save", function (next) {
-  if (this.isModified("title")) {
-    this.slug = slugify(this.title, { lower: true, strict: true });
+blogSchema.pre("save", async function (next) {
+  if (!this.isModified("title")) return next();
+  const base = slugify(this.title, { lower: true, strict: true });
+  let slug = base;
+  let count = 1;
+  while (await mongoose.model("Blog").exists({ slug, _id: { $ne: this._id } })) {
+    slug = `${base}-${count++}`;
   }
+  this.slug = slug;
   next();
 });
 

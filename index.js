@@ -165,7 +165,11 @@ app.use((err, req, res, next) => {
 });
 
 
-connectMongodb().then(() => {
-  app.listen(PORT, () => logger.info(`🚀 Server running on port ${PORT}`));
-  pingServer();
-});
+if (require.main === module) {
+  connectMongodb().then(() => {
+    app.listen(PORT, () => logger.info(`🚀 Server running on port ${PORT}`));
+    pingServer();
+  });
+}
+
+module.exports = app;
