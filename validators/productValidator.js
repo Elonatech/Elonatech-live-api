@@ -16,9 +16,33 @@ const createProductSchema = z.object({
   description: z.string().trim().optional(),
 
   odd: z.string().trim().optional(),
+
+  computerProperty: z.string().optional(),
+});
+
+const computerPropertyFields = z.object({
+  series: z.string().optional(),
+  model: z.string().optional(),
+  weight: z.string().optional(),
+  dimension: z.string().optional(),
+  item: z.string().optional(),
+  color: z.string().optional(),
+  hardware: z.string().optional(),
+  os: z.string().optional(),
+  processor: z.string().optional(),
+  number: z.string().optional(),
+  memory: z.string().optional(),
+  ram: z.string().optional(),
+  drive: z.string().optional(),
+  display: z.string().optional(),
+  resolution: z.string().optional(),
+  graphics: z.string().optional(),
+  voltage: z.string().optional(),
+  battery: z.string().optional(),
+  wireless: z.string().optional(),
 });
 
 // Update allows all fields to be optional — you might only update price or description
-const updateProductSchema = createProductSchema.partial();
+const updateProductSchema = createProductSchema.partial().merge(computerPropertyFields);
 
 module.exports = { createProductSchema, updateProductSchema };

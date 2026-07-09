@@ -342,7 +342,7 @@ const updateProduct = async (req, res, next) => {
       quantity,
       id: myRandomId,
       category,
-      computerProperty: {
+      computerProperty: [{
         series,
         model,
         weight,
@@ -362,7 +362,7 @@ const updateProduct = async (req, res, next) => {
         voltage,
         battery,
         wireless
-      }
+      }]
     };
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
