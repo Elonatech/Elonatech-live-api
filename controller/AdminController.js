@@ -168,7 +168,7 @@ const createAdmin = async (req, res) => {
 
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find({}, "name email role isMaster createdAt");
+    const admins = await Admin.find({}, "name email role isMaster totpEnabled createdAt");
     return res.status(200).json({ admins });
   } catch (error) {
     logger.error("Get all admins error", { error });
@@ -430,4 +430,27 @@ const verifyTotp = async (req, res) => {
 
 
 
-module.exports = { adminRegister, adminLogin, verifyAdmin, refreshAccessToken, logout, createAdmin, getAllAdmins, deleteAdmin, updateAdmin, setupTotp, enableTotp, verifyTotp };
+const disableTotp = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.user.id);
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    if (!admin.totpEnabled) return res.status(400).json({ message: "2FA is not enabled" });
+
+    admin.totpEnabled = false;
+    admin.totpSecret = undefined;
+    await admin.save();
+
+    await logAudit({
+      action: "TOTP_DISABLED",
+      performedBy: { id: admin._id, name: admin.name, email: admin.email },
+      details: "Disabled two-factor authentication"
+    });
+
+    return res.status(200).json({ message: "2FA disabled successfully" });
+  } catch (error) {
+    logger.error("Disable TOTP error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = { adminRegister, adminLogin, verifyAdmin, refreshAccessToken, logout, createAdmin, getAllAdmins, deleteAdmin, updateAdmin, setupTotp, enableTotp, verifyTotp, disableTotp };

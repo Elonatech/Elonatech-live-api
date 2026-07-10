@@ -220,5 +220,6 @@ router.patch("/:id", verifySuperAdmin, AdminController.updateAdmin);
 router.post("/totp/setup", verifyToken, AdminController.setupTotp);
 router.post("/totp/enable", verifyToken, AdminController.enableTotp);
 router.post("/totp/login", AdminController.verifyTotp);  // no auth middleware
+router.post("/totp/disable", verifyToken, AdminController.disableTotp);
 router.get("/audit", verifyToken, AuditController.getAuditLogs);
 module.exports = router;

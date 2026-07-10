@@ -13,6 +13,7 @@ const AuditLogSchema = new mongoose.Schema({
       "TOTP_SETUP",
       "TOTP_ENABLED",
       "TOTP_LOGIN",
+      "TOTP_DISABLED",
       "CREATE_BLOG",
       "UPDATE_BLOG",
       "DELETE_BLOG",
