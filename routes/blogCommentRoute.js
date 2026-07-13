@@ -33,14 +33,13 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [blogId, content, userName, gender]
+ *             required: [blogId, content, userName, email]
  *             properties:
  *               blogId: { type: string }
  *               content: { type: string }
  *               userName: { type: string }
- *               gender:
- *                 type: string
- *                 enum: [male, female]
+ *               email: { type: string }
+ *               website: { type: string }
  *     responses:
  *       201:
  *         description: Comment created
@@ -96,15 +95,14 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [blogId, commentId, content, userName, gender]
+ *             required: [blogId, commentId, content, userName, email]
  *             properties:
  *               blogId: { type: string }
  *               commentId: { type: string }
  *               content: { type: string }
  *               userName: { type: string }
- *               gender:
- *                 type: string
- *                 enum: [male, female]
+ *               email: { type: string }
+ *               website: { type: string }
  *     responses:
  *       201:
  *         description: Reply created
@@ -146,25 +144,31 @@ router.get('/comments/:blogId', async (req, res) => {
   }
 });
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Create a new comment
 router.post('/comments', async (req, res) => {
-  const { blogId, content, userName, gender, createdAt } = req.body;
+  const { blogId, content, userName, email, website, createdAt } = req.body;
 
   // Basic validation for emoji/text content
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ message: 'Content cannot be empty' });
   }
 
-  // Validate gender
-  if (!['male', 'female'].includes(gender)) {
-    return res.status(400).json({ message: 'Gender must be either male or female' });
+  if (!userName || userName.trim().length === 0) {
+    return res.status(400).json({ message: 'Name is required' });
+  }
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ message: 'A valid email is required' });
   }
 
   const newComment = new Comment({
     blogId,
     content,
     userName,
-    gender,
+    email,
+    website,
     createdAt
   });
 
@@ -205,16 +209,19 @@ router.get('/replies/:commentId', async (req, res) => {
 
 // Create a new reply
 router.post('/replies', async (req, res) => {
-  const { blogId, commentId, content, userName, gender, createdAt } = req.body;
+  const { blogId, commentId, content, userName, email, website, createdAt } = req.body;
 
   // Basic validation for emoji/text content
   if (!content || content.trim().length === 0) {
     return res.status(400).json({ message: 'Content cannot be empty' });
   }
 
-  // Validate gender
-  if (!['male', 'female'].includes(gender)) {
-    return res.status(400).json({ message: 'Gender must be either male or female' });
+  if (!userName || userName.trim().length === 0) {
+    return res.status(400).json({ message: 'Name is required' });
+  }
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ message: 'A valid email is required' });
   }
 
   const newReply = new Reply({
@@ -222,7 +229,8 @@ router.post('/replies', async (req, res) => {
     commentId,
     content,
     userName,
-    gender,
+    email,
+    website,
     createdAt
   });
 

@@ -214,7 +214,7 @@ router.post("/verify-admin", verifyToken, AdminController.verifyAdmin);
 
 router.post("/register", verifySuperAdmin, AdminController.adminRegister);
 router.post("/create", verifySuperAdmin, validate(createAdminSchema), AdminController.createAdmin)
-router.get("/all", verifySuperAdmin, AdminController.getAllAdmins);
+router.get("/all", verifyToken, AdminController.getAllAdmins);
 router.delete("/:id", verifySuperAdmin, AdminController.deleteAdmin);
 router.patch("/:id", verifySuperAdmin, AdminController.updateAdmin);
 router.post("/totp/setup", verifyToken, AdminController.setupTotp);

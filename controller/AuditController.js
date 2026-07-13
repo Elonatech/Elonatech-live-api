@@ -4,10 +4,10 @@ const logger = require("../lib/logger");
 
 const getAuditLogs = async (req, res) => {
   try {
-    // Only the master admin can view audit logs
+    // Only super admins can view audit logs
     const requester = await Admin.findById(req.user.id);
-    if (!requester || !requester.isMaster) {
-      return res.status(403).json({ message: "Only the master admin can view audit logs" });
+    if (!requester || requester.role !== "superAdmin") {
+      return res.status(403).json({ message: "Only super admins can view audit logs" });
     }
 
     const { action, page = 1, limit = 50 } = req.query;

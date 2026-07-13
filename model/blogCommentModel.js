@@ -13,13 +13,13 @@ const commentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  gender: {
+  email: {
     type: String,
-    required: true,
-    enum: ['male', 'female']      
+    required: true
   },
-  userImage: {
+  website: {
     type: String,
+    default: ''
   },
   createdAt: {
     type: Date,
@@ -27,15 +27,6 @@ const commentSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
-});
-
-commentSchema.pre('save', function (next) {
-  if (this.gender === 'male') {
-    this.userImage = 'https://img.freepik.com/premium-photo/default-male-user-icon-blank-profile-image-green-background-profile-picture-icon_962764-98402.jpg';
-  } else {
-    this.userImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSD3OmwXK7xXXVWJZiocRJOasPkHLK27kGGOQ&s';
-  }
-  next();
 });
 
 module.exports = mongoose.model('Comment', commentSchema);

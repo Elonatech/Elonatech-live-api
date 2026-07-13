@@ -127,7 +127,7 @@ const refreshAccessToken = async (req, res) => {
     logger.error("Refresh token error", { error });
     return res.status(500).json({ message: "Server Error" });
   }
-} ;
+};
 
 const logout = async (req, res) => {
   try {
@@ -168,7 +168,15 @@ const createAdmin = async (req, res) => {
 
 const getAllAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find({}, "name email role isMaster totpEnabled createdAt");
+    const requester = await Admin.findById(req.user.id);
+    let filter = {};
+    if (requester.role === "admin") {
+      filter = { role: "admin" };                    // hides super admins (and master, who is one)
+    } else if (requester.role === "superAdmin" && !requester.isMaster) {
+      filter = { isMaster: { $ne: true } };            // hides master from non-master super admins
+    }
+    // requester.isMaster === true → no filter, sees everyone
+    const admins = await Admin.find(filter, "name email role isMaster totpEnabled createdAt");
     return res.status(200).json({ admins });
   } catch (error) {
     logger.error("Get all admins error", { error });
@@ -385,7 +393,7 @@ const enableTotp = async (req, res) => {
 const verifyTotp = async (req, res) => {
   try {
     // adminId was sent by the frontend from the first login response (requireTotp: true, adminId: ...)
-    // token is the 6-digit code from Google Authenticator
+    // token is the 6-digit code from  Authenticator
     const { adminId, token } = req.body;
 
     // Basic check — both fields must be present
