@@ -1747,4 +1747,243 @@ const emptdpEmail = async (req, res) => {
 }
 
 
-module.exports = { jobEmail, quoteEmail, consultEmail, contactEmail, checkoutEmail, retainerEmail, sessionEmail, reasonContactEmail, emptdpEmail }
+const igniteEmail = async (req, res) => {
+
+  try {
+    const { fullName, email, location, specialization, programTrack, statement, phone, qualification } = req.body
+    console.log('Received body: ', req.body)
+
+    if (!fullName) {
+      return res.status(400).send("Full name is required")
+    }
+    if (!email) {
+      return res.status(400).send("email is required")
+    }
+    if (!location) {
+      return res.status(400).send("location is required")
+    }
+    if (!specialization) {
+      return res.status(400).send("specialization is required")
+    }
+    if (!programTrack) {
+      return res.status(400).send("programTrack is required")
+    }
+    if (!statement) {
+      return res.status(400).send("statement is required")
+    }
+    if (!qualification) {
+      return res.status(400).send("qualification is required")
+    }
+    if (!phone) {
+      return res.status(400).send("phone is required")
+    }
+
+    if (req.fileValidationError) {
+      return res.status(400).json({ message: "Invalid File Format. PDF File only" })
+    }
+    const file = req.file
+    if (!file) {
+      return res.status(400).json({ message: "No File Received" });
+    }
+
+    const mailOptions = {
+      from: 'noreply@elonatech.com.ng',
+      to: "training@elonatech.com.ng",
+      subject: `New ETMPDP Ignite Application — ${fullName}`,
+      html: `<!DOCTYPE html>
+        <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
+        <head>
+          <title>ETMPDP Ignite Application</title>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]-->
+          <!--[if !mso]><!-->
+          <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet" type="text/css">
+          <!--<![endif]-->
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 0; }
+            a[x-apple-data-detectors] { color: inherit !important; text-decoration: inherit !important; }
+            #MessageViewBody a { color: inherit; text-decoration: none; }
+            p { line-height: inherit; }
+            .image_block img+div { display: none; }
+            @media (max-width: 640px) {
+              .row-content { width: 100% !important; }
+              .stack .column { width: 100%; display: block; }
+              .field-row td { display: block !important; width: 100% !important; }
+            }
+          </style>
+        </head>
+        <body style="background-color: #e8ecf0; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none;">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+            style="mso-table-lspace:0pt; mso-table-rspace:0pt; background-color:#e8ecf0;">
+            <tbody><tr><td style="padding: 24px 0;">
+
+              <!-- HEADER -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; border-radius:8px 8px 0 0; overflow:hidden; background-color:#11253d;">
+                <tbody><tr>
+                  <td style="padding: 28px 40px; text-align:center;">
+                    <img src="https://elonatech.com.ng/static/media/elonatech.c6083e7d06b4cbab7d90.png"
+                      width="180" height="auto" alt="Elonatech" style="display:block; margin:0 auto 16px; height:auto; border:0;">
+                    <div style="display:inline-block; background-color:#dc3545; border-radius:4px; padding:4px 14px; margin-bottom:12px;">
+                      <span style="font-family: Oxygen, Trebuchet MS, sans-serif; font-size:11px; font-weight:700; color:#ffffff; text-transform:uppercase; letter-spacing:1.5px;">ETMPDP Ignite</span>
+                    </div>
+                    <h1 style="margin:0; color:#ffffff; font-family: Oswald, sans-serif; font-size:28px; font-weight:700; line-height:1.2;">
+                      New ETMPDP Ignite Application
+                    </h1>
+                    <p style="margin:8px 0 0; color:#a8c4e8; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:13px;">
+                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+              <!-- APPLICANT SUMMARY BAND -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; background-color:#dc3545;">
+                <tbody><tr>
+                  <td style="padding: 14px 40px; text-align:center;">
+                    <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:15px; font-weight:700; color:#ffffff;">
+                      ${fullName}
+                      <span style="font-weight:400; margin-left:8px;">&#8212; ${specialization}</span>
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+              <!-- BODY CARD -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; background-color:#ffffff;">
+                <tbody>
+
+                <tr><td style="padding: 32px 40px 0;">
+                  <p style="margin:0 0 20px; font-family: Oswald, sans-serif; font-size:13px; font-weight:600; color:#11253d; text-transform:uppercase; letter-spacing:1.5px; border-bottom: 2px solid #11253d; padding-bottom:8px;">
+                    Applicant Details
+                  </p>
+
+                  <!-- Row: Full Name + Phone -->
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                    style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding: 12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Full Name</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${fullName}</p>
+                      </td>
+                      <td width="50%" style="padding: 12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Phone Number</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${phone}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <!-- Row: Email + Location -->
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                    style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding: 12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Email Address</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">
+                          <a href="mailto:${email}" style="color:#11253d; text-decoration:none;">${email}</a>
+                        </p>
+                      </td>
+                      <td width="50%" style="padding: 12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Location</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${location}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <!-- Row: Specialization + Program Track -->
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                    style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding: 12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Specialization</p>
+                        <p style="margin:0;">
+                          <span style="display:inline-block; background-color:#fdeef0; color:#11253d; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:13px; font-weight:600; padding:4px 10px; border-radius:20px;">${specialization}</span>
+                        </p>
+                      </td>
+                      <td width="50%" style="padding: 12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Program Track</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${programTrack}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <!-- Row: Qualification -->
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                    style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="100%" style="padding: 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Current Academic Status</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${qualification}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                </td></tr>
+
+                <!-- Personal Statement -->
+                <tr><td style="padding: 24px 40px 32px;">
+                  <p style="margin:0 0 10px; font-family: Oswald, sans-serif; font-size:13px; font-weight:600; color:#11253d; text-transform:uppercase; letter-spacing:1.5px; border-bottom: 2px solid #11253d; padding-bottom:8px;">
+                    Personal Statement
+                  </p>
+                  <div style="background-color:#f7f9fc; border-left:4px solid #11253d; border-radius:0 6px 6px 0; padding:18px 20px;">
+                    <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333; line-height:1.8;">${statement}</p>
+                  </div>
+                  <p style="margin:16px 0 0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:12px; color:#888888; font-style:italic;">
+                    CV / Resume is attached to this email.
+                  </p>
+                </td></tr>
+
+                </tbody>
+              </table>
+
+              <!-- FOOTER -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; background-color:#11253d; border-radius:0 0 8px 8px; overflow:hidden;">
+                <tbody><tr>
+                  <td style="padding: 24px 40px; text-align:center;">
+                    <p style="margin:0 0 4px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:12px; font-weight:700; color:#ffffff;">
+                      Elonatech Nigeria Limited &copy; ${new Date().getFullYear()} &mdash; All rights reserved
+                    </p>
+                    <p style="margin:0 0 8px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:11px; color:#7a9cc4;">
+                      You can view our <a href="http://www.elonatech.com.ng/policy" target="_blank" rel="noopener" style="color:#56B500; text-decoration:underline;">Privacy Policy</a>.
+                    </p>
+                    <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:11px; color:#7a9cc4;">
+                      This notification was generated by the Elonatech ETMPDP Ignite Application system.
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+            </td></tr></tbody>
+          </table>
+        </body>
+        </html>`,
+      attachments: file ? [{
+        filename: file.originalname,
+        content: file.buffer.toString('base64'),
+        encoding: 'base64'
+      }] : []
+    }
+
+    await sgMail.send(mailOptions)
+
+    res.json({
+      status: "success",
+      message: "Application submitted successfully"
+    });
+  } catch (error) {
+    console.error("Email sending error: ", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send email"
+    });
+  }
+
+}
+
+
+module.exports = { jobEmail, quoteEmail, consultEmail, contactEmail, checkoutEmail, retainerEmail, sessionEmail, reasonContactEmail, emptdpEmail, igniteEmail }

@@ -100,6 +100,28 @@ const getNews = async (req, res) => {
   }
 };
 
+// Get blogs by info
+const getInfo = async (req, res) => {
+  try {
+    const getAllInfo = await Blog.find({ category: "info" }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: getAllInfo.length, getAllInfo });
+  } catch (error) {
+    logger.error("Get Info error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Get blogs by editorial
+const getEditorial = async (req, res) => {
+  try {
+    const getAllEditorial = await Blog.find({ category: "editorial" }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: getAllEditorial.length, getAllEditorial });
+  } catch (error) {
+    logger.error("Get Editorial error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 //get news by id
 
 // const getNewsById = async (req, res) => {
@@ -163,6 +185,53 @@ const getTrendsById = async (req, res) => {
     return res.status(500).json({ message: "Server Error" });
   }
 };
+
+
+const getInfoById = async (req, res) => {
+  try {
+    const identifier = req.params.id;
+    let info;
+
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      info = await Blog.findById(identifier);
+    } else {
+      info = await Blog.findOne({ slug: identifier });
+    }
+
+    if (!info) {
+      return res.status(404).json({ message: "Info Not Found" });
+    }
+
+    return res.status(200).json(info);
+  } catch (error) {
+    logger.error("Get info by id error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+const getEditorialById = async (req, res) => {
+  try {
+    const identifier = req.params.id;
+    let editorial;
+
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      editorial = await Blog.findById(identifier);
+    } else {
+      editorial = await Blog.findOne({ slug: identifier });
+    }
+
+    if (!editorial) {
+      return res.status(404).json({ message: "Editorial Not Found" });
+    }
+
+    return res.status(200).json(editorial);
+  } catch (error) {
+    logger.error("Get editorial by id error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 
 const getBlogId = async (req, res) => {
   try {
@@ -267,6 +336,10 @@ module.exports = {
   deleteBlogId,
   getTrends,
   getNews,
+  getInfo,
+  getEditorial,
   getNewsById,
-  getTrendsById
+  getTrendsById,
+  getInfoById,
+  getEditorialById
 };

@@ -1,9 +1,9 @@
 const { z } = require("zod");
 
-const VALID_CATEGORIES = ["blog", "trends", "news"];
+const VALID_CATEGORIES = ["blog", "trends", "news", "info", "editorial"];
 
 const categoryEnum = z.enum(VALID_CATEGORIES, {
-  errorMap: () => ({ message: "Category must be blog, trends, or news" }),
+  errorMap: () => ({ message: "Category must be blog, trends, news, info, or editorial" }),
 });
 
 // Handles all the ways category can arrive:
@@ -26,10 +26,10 @@ const createBlogSchema = z.object({
   // Required on create — cannot be undefined or empty
   category: z.preprocess(
     parseCategory,
-    z.union([
-      categoryEnum,
-      z.array(categoryEnum).min(1),
-    ])
+    z.union(
+      [categoryEnum, z.array(categoryEnum).min(1)],
+      { errorMap: () => ({ message: "Category must be blog, trends, news, info, or editorial" }) }
+    )
   ),
 });
 
@@ -40,10 +40,10 @@ const updateBlogSchema = z.object({
   // Optional on update — empty string or missing means "don't change category"
   category: z.preprocess(
     parseCategory,
-    z.union([
-      categoryEnum,
-      z.array(categoryEnum).min(1),
-    ]).optional()
+    z.union(
+      [categoryEnum, z.array(categoryEnum).min(1)],
+      { errorMap: () => ({ message: "Category must be blog, trends, news, info, or editorial" }) }
+    ).optional()
   ),
 });
 

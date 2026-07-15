@@ -16,6 +16,7 @@ const metaTagsMiddleware = require("./middleware/metaTagsMiddleware");
 const adminRoutes = require("./routes/adminRoute");
 const blogRoutes = require("./routes/blogRoute");
 const productRoutes = require("./routes/productRoute");
+const jobRoutes = require("./routes/jobRoute");
 const newsRoute = require("./routes/newsRoute");
 const visitorRoutes = require("./routes/visitorRoutes");
 const emailRoutes = require("./routes/emailRoute");
@@ -134,6 +135,7 @@ app.get("/og/:id", async (req, res) => {
 // --------------------------------------
 app.use("/api/v1/blog", blogRoutes);
 app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/jobs", jobRoutes);
 app.use("/api/v1/auth", adminRoutes);
 app.use("/api/v1/email", emailRoutes);
 app.use("/api/v1/visitors", visitorRoutes);

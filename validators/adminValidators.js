@@ -25,7 +25,10 @@ const createAdminSchema = z.object({
     .string({ required_error: "Email is required" })
     .trim()
     .toLowerCase()
-    .email("Please provide a valid email address"),
+    .email("Please provide a valid email address")
+    .refine((email) => email.includes("elonatech"), {
+      message: "Admin accounts can only be created with an elonatech email address",
+    }),
 
   password: z
     .string({ required_error: "Password is required" })

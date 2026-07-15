@@ -13,6 +13,10 @@ const adminRegister = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !email.toLowerCase().includes("elonatech")) {
+      return res.status(400).json({ message: "Admin accounts can only be created with an elonatech email address" });
+    }
+
     const oldadmin = await Admin.findOne({ email });
     if (oldadmin) {
       return res.status(409).json({ message: "Admin Already Exist" });
@@ -233,9 +237,13 @@ const updateAdmin = async (req, res) => {
     }
 
     if (email !== undefined) {
-      const existing = await Admin.findOne({ email: email.trim().toLowerCase(), _id: { $ne: req.params.id } });
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail.includes("elonatech")) {
+        return res.status(400).json({ message: "Admin accounts can only use an elonatech email address" });
+      }
+      const existing = await Admin.findOne({ email: normalizedEmail, _id: { $ne: req.params.id } });
       if (existing) return res.status(409).json({ message: "Email already in use by another admin" });
-      updates.email = email.trim().toLowerCase();
+      updates.email = normalizedEmail;
     }
 
     if (password !== undefined && password.trim() !== "") {

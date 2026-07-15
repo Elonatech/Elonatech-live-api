@@ -1,10 +1,21 @@
 const mongoose = require("mongoose");
 const slugify = require("slugify");
 
-const blogSchema = new mongoose.Schema(
+const jobSchema = new mongoose.Schema(
   {
     title: {
       type: String,
+      required: true
+    },
+
+    location: {
+      type: String,
+      required: true
+    },
+
+    type: {
+      type: String,
+      enum: ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance"],
       required: true
     },
 
@@ -13,45 +24,32 @@ const blogSchema = new mongoose.Schema(
       required: true
     },
 
-    author: {
+    status: {
       type: String,
-      required: true
-    },
-
-    category: {
-      type: [String],
-      enum: ["blog", "trends", "news", "info", "editorial"],
-      default: ["blog"],
-      required: true
+      enum: ["Active", "Draft", "Closed"],
+      default: "Draft"
     },
 
     slug: {
       type: String,
       unique: true,
     },
-
-
-    cloudinary_id: {
-      type: String,
-      required: true
-    },
-
   },
   { timestamps: true }
 );
 
-blogSchema.pre("save", async function (next) {
+jobSchema.pre("save", async function (next) {
   if (!this.isModified("title")) return next();
   const base = slugify(this.title, { lower: true, strict: true });
   let slug = base;
   let count = 1;
-  while (await mongoose.model("Blog").exists({ slug, _id: { $ne: this._id } })) {
+  while (await mongoose.model("Job").exists({ slug, _id: { $ne: this._id } })) {
     slug = `${base}-${count++}`;
   }
   this.slug = slug;
   next();
 });
 
-const Blog = mongoose.model("Blog", blogSchema);
+const Job = mongoose.model("Job", jobSchema);
 
-module.exports = Blog;
+module.exports = Job;

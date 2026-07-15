@@ -40,6 +40,29 @@
 
 /**
  * @swagger
+ * /api/v1/blog/info:
+ *   get:
+ *     summary: Get all info posts
+ *     tags: [Blogs]
+ *     responses:
+ *       200:
+ *         description: Array of info posts
+ */
+
+
+/**
+ * @swagger
+ * /api/v1/blog/editorial:
+ *   get:
+ *     summary: Get all editorial posts
+ *     tags: [Blogs]
+ *     responses:
+ *       200:
+ *         description: Array of editorial posts
+ */
+
+/**
+ * @swagger
  * /api/v1/blog/{id}:
  *   get:
  *     summary: Get a blog post by ID or slug
@@ -153,10 +176,14 @@ const { cache, clearCache } = require("../middleware/cache");
 
 router.get("/trends", cache(300), blogController.getTrends);
 router.get("/news", cache(300), blogController.getNews);
+router.get("/info", cache(300), blogController.getInfo);
+router.get("/editorial", cache(300), blogController.getEditorial);
 router.get("/", cache(300), blogController.getBlogs);
 router.get("/:id", cache(300), blogController.getBlogId);
 router.get("/news/:id", cache(300), blogController.getNewsById);
 router.get("/trends/:id", cache(300), blogController.getTrendsById);
+router.get("/info/:id", cache(300), blogController.getInfoById);
+router.get("/editorial/:id", cache(300), blogController.getEditorialById);
 
 router.post("/create", verifyToken, storage.single("cloudinary_image"), validate(createBlogSchema), blogController.createBlog);
 router.put("/update/:id", verifyToken, storage.single("cloudinary_image"), validate(updateBlogSchema), blogController.updateBlogId);
