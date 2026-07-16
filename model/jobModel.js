@@ -13,13 +13,41 @@ const jobSchema = new mongoose.Schema(
       required: true
     },
 
-    type: {
-      type: String,
-      enum: ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance"],
+    numberOfOpenings: {
+      type: Number,
       required: true
     },
 
-    description: {
+    employmentType: {
+      type: String,
+      enum: ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance", "Mentorship", "Volunteer", "Other"],
+      required: true
+    },
+
+    workplaceType: {
+      type: String,
+      enum: ["On-site", "Hybrid", "Remote"],
+      required: true
+    },
+
+    jobSummary: {
+      type: String,
+      required: true
+    },
+
+    jobLevel: {
+      type: String,
+      enum: ["No Experience", "Internship & Graduate", "Entry-level", "Mid-level", "Senior-level", "Executive-level"],
+      required: true
+    },
+
+    minimumQualification: {
+      type: String,
+      required: true
+    },
+
+
+    jobDescription: {
       type: String,
       required: true
     },
@@ -28,6 +56,12 @@ const jobSchema = new mongoose.Schema(
       type: String,
       enum: ["Active", "Draft", "Closed"],
       default: "Draft"
+    },
+
+     hiringTimeline: {
+      type: String,
+      enum: ["2 weeks", "1 Month", "2 Months", "3 Months"],
+      default: "2 weeks"
     },
 
     slug: {

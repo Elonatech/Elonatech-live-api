@@ -2,9 +2,20 @@ const Blog = require("../model/blogModel");
 const cloudinary = require("../lib/cloudinary");
 const mongoose = require("mongoose");
 const streamifier = require('streamifier');
+const sanitizeHtml = require("sanitize-html");
 const { clearCache } = require("../middleware/cache");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
+
+// Strips HTML tags from the rich-text description and truncates on a word
+// boundary, for use as a short card preview without shipping full HTML.
+const makeExcerpt = (html, maxLength = 150) => {
+  const plainText = sanitizeHtml(html || "", { allowedTags: [], allowedAttributes: {} })
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plainText.length <= maxLength) return plainText;
+  return plainText.slice(0, maxLength).replace(/\s+\S*$/, "") + "…";
+};
 
 
 const createBlog = async (req, res) => {
@@ -68,7 +79,11 @@ const createBlog = async (req, res) => {
 // Get All Blogs
 const getBlogs = async (req, res) => {
   try {
-    const getAllBlogs = await Blog.find().sort({ createdAt: -1 }).select("-description");
+    const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
+    const getAllBlogs = blogs.map(({ description, ...rest }) => ({
+      ...rest,
+      excerpt: makeExcerpt(description),
+    }));
     return res.status(200).json({ success: true, count: getAllBlogs.length, getAllBlogs });
   } catch (error) {
     logger.error("Get blogs error", { error });

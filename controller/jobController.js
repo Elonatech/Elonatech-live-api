@@ -6,9 +6,9 @@ const logAudit = require("../lib/logAudit");
 // POST /api/v1/jobs — create a new job posting
 const createJob = async (req, res) => {
   try {
-    const { title, location, type, description, status } = req.body;
+    const { title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline } = req.body;
 
-    const job = await Job.create({ title, location, type, description, status });
+    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline });
 
     await logAudit({
       action: "CREATE_JOB",
@@ -75,14 +75,20 @@ const updateJob = async (req, res) => {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const { title, location, type, description, status } = req.body;
+    const { title, location, employmentType, numberOfOpenings, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline } = req.body;
     if (title !== undefined) job.title = title;
     if (location !== undefined) job.location = location;
-    if (type !== undefined) job.type = type;
-    if (description !== undefined) job.description = description;
+    if (employmentType !== undefined) job.employmentType = employmentType;
+    if (workplaceType !== undefined) job.workplaceType = workplaceType;
+    if (minimumQualification !== undefined) job.minimumQualification = minimumQualification;
+    if (jobSummary !== undefined) job.jobSummary = jobSummary;
+    if (jobDescription !== undefined) job.jobDescription = jobDescription;
     if (status !== undefined) job.status = status;
+    if (numberOfOpenings !== undefined) job.numberOfOpenings = numberOfOpenings;
+    if (jobLevel !== undefined) job.jobLevel = jobLevel;
+    if (hiringTimeline !== undefined) job.hiringTimeline = hiringTimeline;
 
-    await job.save();
+    await job.save({ validateModifiedOnly: true });
 
     await logAudit({
       action: "UPDATE_JOB",

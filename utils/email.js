@@ -15,9 +15,11 @@ const transporter = nodemailer.createTransport({
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS
   },
-  // tls: {
-  //   rejectUnauthorized: false
-  // }
+  // mail.elonatech.com.ng's cert chain is incomplete (missing intermediate) —
+  // without this, every send fails with "unable to verify the first certificate"
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 const sgMail = require('@sendgrid/mail');
@@ -219,7 +221,7 @@ const jobEmail = async (req, res) => {
       }] : []
     }
 
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
 
     res.json({
       status: "success",
@@ -376,7 +378,7 @@ const quoteEmail = async (req, res) => {
     }
 
     try {
-      await sgMail.send(mailOptions);
+      await transporter.sendMail(mailOptions);
       console.log("Email sent successfully");
 
       return res.json({
@@ -562,7 +564,7 @@ const consultEmail = async (req, res) => {
   }
 
   try {
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 
     return res.json({
@@ -724,7 +726,7 @@ const contactEmail = async (req, res) => {
   }
 
   try {
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 
     return res.json({
@@ -885,7 +887,7 @@ const reasonContactEmail = async (req, res) => {
   }
 
   try {
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 
     return res.json({
@@ -935,8 +937,11 @@ const checkoutEmail = async (req, res) => {
   if (!notes) {
     return res.status(400).send("Notes is Required")
   }
+  if (!Array.isArray(itemsOrdered) || itemsOrdered.length === 0) {
+    return res.status(400).json({ message: "Cart items are required" });
+  }
 
-
+  try {
 
   const mailOptions = {
     from: "noreply@elonatech.com.ng",
@@ -1098,8 +1103,7 @@ const checkoutEmail = async (req, res) => {
         </html>`
   }
 
-  try {
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 
     return res.json({
@@ -1108,7 +1112,7 @@ const checkoutEmail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Email sending error:", error);
+    console.error("Checkout email error:", error);
     return res.status(500).json({
       status: "error",
       message: "Failed to send email"
@@ -1298,7 +1302,7 @@ const retainerEmail = async (req, res) => {
   }
 
   try {
-    await sgMail.send(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 
     return res.json({
@@ -1490,7 +1494,7 @@ const sessionEmail = async (req, res) => {
         </html>`
     }
     try {
-      await sgMail.send(mailOptions);
+      await transporter.sendMail(mailOptions);
       console.log("Email sent successfully");
       return res.json({ status: "success", message: "Session booked successfully" });
     } catch (error) {
@@ -1730,7 +1734,7 @@ const emptdpEmail = async (req, res) => {
       }] : []
     }
 
-    await sgMail.send(mailOptions)
+    await transporter.sendMail(mailOptions)
 
     res.json({
       status: "success",
@@ -1969,7 +1973,7 @@ const igniteEmail = async (req, res) => {
       }] : []
     }
 
-    await sgMail.send(mailOptions)
+    await transporter.sendMail(mailOptions)
 
     res.json({
       status: "success",

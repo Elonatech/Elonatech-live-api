@@ -27,15 +27,23 @@ const mailChimp = async (req, res) => {
     const sendData = await fetch(mailchimp_url, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `auth ${mailchimp_api_key}`
       },
       body: postData
     })
 
+    if (!sendData.ok) {
+      const errorBody = await sendData.text();
+      console.error("Mailchimp subscribe error:", sendData.status, errorBody);
+      return res.status(502).send('Failed to subscribe. Please try again.');
+    }
+
     return res.status(200).send('Email Sent Successfully');
 
   } catch (error) {
-    console.log(error)
+    console.error("Mailchimp subscribe error:", error);
+    return res.status(500).send('Failed to subscribe. Please try again.');
   }
 }
 

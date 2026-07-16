@@ -155,13 +155,16 @@ if (process.env.NODE_ENV !== "production") {
 
 app.use("/sitemap.xml", sitemapRoute);
 
-app.get("/", (req, res) => res.send("ELONATECH API RUNNING 🚀"));
+app.get("/", (req, res) => res.send("ELONATECH API RUNNING SUCCESSFULLY"));
 
 
 app.use((err, req, res, next) => {
   logger.error("GlobalError:", { error: err.message, stack: err.stack });
   if (err.message === "Unsupported file format") {
     return res.status(400).json({ message: err.message });
+  }
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ message: "File is too large. Maximum allowed size is 15MB." });
   }
   return res.status(500).json({ message: "Server Error", error: err.message });
 });
