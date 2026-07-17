@@ -19,7 +19,12 @@ const transporter = nodemailer.createTransport({
   // without this, every send fails with "unable to verify the first certificate"
   tls: {
     rejectUnauthorized: false
-  }
+  },
+  // Without these, a bad connection to the mail server hangs forever with no
+  // error — the request just sits there indefinitely on the frontend
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 20000
 });
 
 const sgMail = require('@sendgrid/mail');
