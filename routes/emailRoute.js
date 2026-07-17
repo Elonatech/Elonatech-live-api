@@ -141,7 +141,14 @@ router.post("/checkout", email.checkoutEmail);
 router.post("/retainership", email.retainerEmail);
 router.post("/session", email.sessionEmail);
 router.post("/emptdp", upload.single("file"), email.emptdpEmail);
-router.post("/ignite", upload.single("file"), email.igniteEmail);
+router.post(
+  "/ignite",
+  upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "siwesLetter", maxCount: 1 },
+  ]),
+  email.igniteEmail
+);
 
 module.exports = router;
  

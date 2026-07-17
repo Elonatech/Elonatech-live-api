@@ -62,7 +62,6 @@ const jobEmail = async (req, res) => {
     }
 
 
-
     const mailOptions = {
       from: 'noreply@elonatech.com.ng',
       // replyTo: 'noreply@elonatech.com.ng',
@@ -108,7 +107,7 @@ const jobEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Job Application</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">New Job Application</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -292,7 +291,7 @@ const quoteEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Quote Request</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">Quote Request</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -478,7 +477,7 @@ const consultEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Consultation</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">Consultation Request</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -649,7 +648,7 @@ const contactEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Contact Us</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">New Contact Message</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -810,7 +809,7 @@ const reasonContactEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Get In Touch</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">New Enquiry</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -943,13 +942,13 @@ const checkoutEmail = async (req, res) => {
 
   try {
 
-  const mailOptions = {
-    from: "noreply@elonatech.com.ng",
-    replyTo: "noreply@elonatech.com.ng",
-    to: email,
-    bcc: ["billing@elonatech.com.ng"],
-    subject: `Order Confirmation — ${firstname} ${lastname}`,
-    html: `<!DOCTYPE html>
+    const mailOptions = {
+      from: "noreply@elonatech.com.ng",
+      replyTo: "noreply@elonatech.com.ng",
+      to: email,
+      bcc: ["billing@elonatech.com.ng"],
+      subject: `Order Confirmation — ${firstname} ${lastname}`,
+      html: `<!DOCTYPE html>
         <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
         <head>
           <title>Order Confirmation</title>
@@ -1101,7 +1100,7 @@ const checkoutEmail = async (req, res) => {
           </table>
         </body>
         </html>`
-  }
+    }
 
     await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
@@ -1201,7 +1200,7 @@ const retainerEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Retainership</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">Retainership Request</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -1402,7 +1401,7 @@ const sessionEmail = async (req, res) => {
                       <span style="font-family:Oxygen,Trebuchet MS,sans-serif;font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1.5px;">Book a Session</span>
                     </div>
                     <h1 style="margin:0;color:#ffffff;font-family:Oswald,sans-serif;font-size:28px;font-weight:700;line-height:1.2;">Session Booking</h1>
-                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+                    <p style="margin:8px 0 0;color:#a8c4e8;font-family:Oxygen,Trebuchet MS,sans-serif;font-size:13px;">Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                   </td>
                 </tr></tbody>
               </table>
@@ -1597,7 +1596,7 @@ const emptdpEmail = async (req, res) => {
                       New Training Application
                     </h1>
                     <p style="margin:8px 0 0; color:#a8c4e8; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:13px;">
-                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </td>
                 </tr></tbody>
@@ -1783,9 +1782,10 @@ const igniteEmail = async (req, res) => {
     }
 
     if (req.fileValidationError) {
-      return res.status(400).json({ message: "Invalid File Format. PDF File only" })
+      return res.status(400).json({ message: "Invalid file format. CV must be a PDF; Siwes letter must be PDF or JPEG" })
     }
-    const file = req.file
+    const file = req.files?.file?.[0]
+    const siwesLetter = req.files?.siwesLetter?.[0]
     if (!file) {
       return res.status(400).json({ message: "No File Received" });
     }
@@ -1837,7 +1837,7 @@ const igniteEmail = async (req, res) => {
                       New ETMPDP Ignite Application
                     </h1>
                     <p style="margin:8px 0 0; color:#a8c4e8; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:13px;">
-                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
+                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </td>
                 </tr></tbody>
@@ -1966,11 +1966,18 @@ const igniteEmail = async (req, res) => {
           </table>
         </body>
         </html>`,
-      attachments: file ? [{
-        filename: file.originalname,
-        content: file.buffer.toString('base64'),
-        encoding: 'base64'
-      }] : []
+      attachments: [
+        {
+          filename: file.originalname,
+          content: file.buffer.toString('base64'),
+          encoding: 'base64'
+        },
+        ...(siwesLetter ? [{
+          filename: siwesLetter.originalname,
+          content: siwesLetter.buffer.toString('base64'),
+          encoding: 'base64'
+        }] : [])
+      ]
     }
 
     await transporter.sendMail(mailOptions)
