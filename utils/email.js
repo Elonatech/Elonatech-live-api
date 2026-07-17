@@ -30,6 +30,24 @@ const transporter = nodemailer.createTransport({
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+const cloudinary = require('../lib/cloudinary');
+const streamifier = require('streamifier');
+const Order = require('../model/orderModel');
+const EtmpdpApplication = require('../model/etmpdpApplicationModel');
+const Quote = require('../model/quoteModel');
+
+// Uploads a file buffer (PDF or image) to Cloudinary as a raw asset and
+// resolves with its download URL. Used to persist application CVs / letters so
+// admins can retrieve them from the dashboard even if the email never sends.
+const uploadBufferToCloudinary = (buffer, folder = "etmpdp") =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: "raw" },
+      (error, result) => (error ? reject(error) : resolve(result.secure_url))
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+
 const jobEmail = async (req, res) => {
 
   try {
@@ -251,6 +269,19 @@ const quoteEmail = async (req, res) => {
       return res.status(400).send("Please Fill All Fields")
     }
 
+    // Persist the quote request FIRST so a failed notification email never
+    // loses the lead. The form's `letter` maps to the model's `description`.
+    let quote;
+    try {
+      quote = await Quote.create({
+        fullname, email, number, company, project, location,
+        description: letter,
+      });
+    } catch (error) {
+      console.error("Quote save error:", error);
+      return res.status(500).json({ status: "error", message: "Could not submit your request. Please try again." });
+    }
+
     const mailOptions = {
       from: "noreply@elonatech.com.ng",
       replyTo: "noreply@elonatech.com.ng",
@@ -383,22 +414,21 @@ const quoteEmail = async (req, res) => {
 
     try {
       await transporter.sendMail(mailOptions);
+      quote.emailSent = true;
+      await quote.save();
       console.log("Email sent successfully");
-
-      return res.json({
-        status: "success",
-        message: "Quote request sent successfully"
-      });
-
     } catch (error) {
-      console.error("Email sending error:", error);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to send email"
-      });
+      // Quote already saved — a failed email is not a failed request.
+      console.error("Quote email error:", error);
     }
+
+    return res.json({
+      status: "success",
+      message: "Quote request sent successfully"
+    });
+
   } catch (error) {
-    console.error("Email sending error:", error);
+    console.error("Quote handler error:", error);
     res.status(500).json({
       status: "error",
       message: "Failed to send email"
@@ -945,6 +975,23 @@ const checkoutEmail = async (req, res) => {
     return res.status(400).json({ message: "Cart items are required" });
   }
 
+  // Persist the order FIRST so a failed notification email never loses it —
+  // the admin dashboard becomes the source of truth, email is just a notice.
+  let order;
+  try {
+    order = await Order.create({
+      firstname, lastname, company, email, number, address, state, postal, notes,
+      items: itemsOrdered,
+      cartTotal,
+    });
+  } catch (error) {
+    console.error("Checkout save error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Could not place your order. Please try again.",
+    });
+  }
+
   try {
 
     const mailOptions = {
@@ -1108,20 +1155,19 @@ const checkoutEmail = async (req, res) => {
     }
 
     await transporter.sendMail(mailOptions);
+    order.emailSent = true;
+    await order.save();
     console.log("Email sent successfully");
-
-    return res.json({
-      status: "success",
-      message: "Order placed successfully"
-    });
-
   } catch (error) {
+    // The order is already safely saved — a failed email is not a failed order.
+    // Log it so admins can follow up; the dashboard still shows the order.
     console.error("Checkout email error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to send email"
-    });
   }
+
+  return res.json({
+    status: "success",
+    message: "Order placed successfully"
+  });
 
 }
 
@@ -1551,6 +1597,21 @@ const emptdpEmail = async (req, res) => {
     return res.status(400).json({ message: "No File Received" });
   }
 
+  // Upload the CV to storage and persist the application FIRST, so a failed
+  // notification email never loses the submission or its CV.
+  let application;
+  try {
+    const cv_url = await uploadBufferToCloudinary(file.buffer);
+    application = await EtmpdpApplication.create({
+      program: "Regular",
+      fullName, email, phone, location, qualification, statement, areaOfInterest,
+      cv_url,
+    });
+  } catch (error) {
+    console.error("ETMPDP (Regular) save error:", error);
+    return res.status(500).json({ status: "error", message: "Could not submit your application. Please try again." });
+  }
+
   try {
     const mailOptions = {
       from: 'noreply@elonatech.com.ng',
@@ -1740,12 +1801,14 @@ const emptdpEmail = async (req, res) => {
 
     try {
       await transporter.sendMail(mailOptions);
+      application.emailSent = true;
+      await application.save();
       console.log("Email sent successfully");
-      return res.json({ status: "success", message: "Application submitted successfully" });
     } catch (error) {
+      // Application already saved — a failed email is not a failed submission.
       console.error("Error sending email:", error);
-      return res.status(500).json({ status: "error", message: "Failed to submit application" });
     }
+    return res.json({ status: "success", message: "Application submitted successfully" });
   } catch (error) {
     console.error("Email sending error:", error);
     return res.status(500).json({
@@ -1794,6 +1857,24 @@ const igniteEmail = async (req, res) => {
     const siwesLetter = req.files?.siwesLetter?.[0]
     if (!file) {
       return res.status(400).json({ message: "No File Received" });
+    }
+
+    // Upload CV (+ optional Siwes letter) and persist FIRST, so a failed email
+    // never loses the application or its files.
+    let application;
+    try {
+      const cv_url = await uploadBufferToCloudinary(file.buffer);
+      const siwesLetter_url = siwesLetter
+        ? await uploadBufferToCloudinary(siwesLetter.buffer)
+        : undefined;
+      application = await EtmpdpApplication.create({
+        program: "Ignite",
+        fullName, email, phone, location, qualification, statement, specialization, programTrack,
+        cv_url, siwesLetter_url,
+      });
+    } catch (error) {
+      console.error("ETMPDP (Ignite) save error:", error);
+      return res.status(500).json({ status: "error", message: "Could not submit your application. Please try again." });
     }
 
     const mailOptions = {
@@ -1986,14 +2067,21 @@ const igniteEmail = async (req, res) => {
       ]
     }
 
-    await transporter.sendMail(mailOptions)
+    try {
+      await transporter.sendMail(mailOptions)
+      application.emailSent = true;
+      await application.save();
+    } catch (error) {
+      // Application already saved — a failed email is not a failed submission.
+      console.error("Ignite email error:", error);
+    }
 
     res.json({
       status: "success",
       message: "Application submitted successfully"
     });
   } catch (error) {
-    console.error("Email sending error: ", error);
+    console.error("Ignite handler error: ", error);
     res.status(500).json({
       status: "error",
       message: "Failed to send email"
