@@ -39,6 +39,8 @@ const streamifier = require('streamifier');
 const Order = require('../model/orderModel');
 const EtmpdpApplication = require('../model/etmpdpApplicationModel');
 const Quote = require('../model/quoteModel');
+const Job = require('../model/jobModel');
+const JobApplication = require('../model/jobApplicationModel');
 
 // Uploads a file buffer (PDF or image) to Cloudinary as a raw asset and
 // resolves with its download URL. Used to persist application CVs / letters so
@@ -56,7 +58,7 @@ const jobEmail = async (req, res) => {
 
   try {
 
-    let { firstname, lastname, email, number, gender, address, dob, category, status, letter, skill } = req.body;
+    let { firstname, lastname, email, number, gender, address, dob, category, status, letter, skill, jobId } = req.body;
 
     let parsedSkills = [];
     if (typeof skill === "string") {
@@ -88,6 +90,33 @@ const jobEmail = async (req, res) => {
       return res.status(400).json({ message: "No File Received" });
     }
 
+    if (!jobId) {
+      return res.status(400).json({ message: "No job selected for this application" });
+    }
+
+    // Upload the CV and persist the application FIRST, so a failed
+    // notification email never loses the applicant or their CV.
+    let application;
+    try {
+      const job = await Job.findById(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "That job posting no longer exists" });
+      }
+
+      const cv_url = await uploadBufferToCloudinary(file.buffer, "job-applications");
+      application = await JobApplication.create({
+        job: job._id,
+        jobTitle: job.title,
+        firstname, lastname, email, number, gender, address, dob,
+        skill: parsedSkills,
+        letter,
+        employmentStatus: status,
+        cv_url,
+      });
+    } catch (error) {
+      console.error("Job application save error:", error);
+      return res.status(500).json({ message: "Could not submit your application. Please try again." });
+    }
 
     const mailOptions = {
       from: EMAIL_FROM,
@@ -247,16 +276,22 @@ const jobEmail = async (req, res) => {
       }] : []
     }
 
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
+      application.emailSent = true;
+      await application.save();
+    } catch (error) {
+      // Application already saved — a failed email is not a failed submission.
+      console.error("Job application email error:", error);
+    }
 
     res.json({
       status: "success",
       message: "Application submitted successfully"
     });
 
-    console.log('Received body:', req.body);
   } catch (error) {
-    console.error("Email sending error:", error);
+    console.error("Job application handler error:", error);
     res.status(500).json({
       status: "error",
       message: "Failed to send email"

@@ -8,6 +8,10 @@ const jobApplicationSchema = new mongoose.Schema(
       required: true
     },
 
+    // Snapshot of the job title at time of application, so the record still
+    // reads correctly even if the posting is later edited or deleted.
+    jobTitle: { type: String },
+
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
     email: { type: String, required: true },
@@ -17,6 +21,11 @@ const jobApplicationSchema = new mongoose.Schema(
     dob: { type: String },
     skill: { type: [String], default: [] },
     letter: { type: String },
+
+    // The applicant's current employment status from the form (e.g.
+    // "Unemployed"). Deliberately NOT `status` — that field below is the
+    // admin's review workflow and has its own enum.
+    employmentStatus: { type: String },
 
     cv_url: {
       type: String,
@@ -28,6 +37,8 @@ const jobApplicationSchema = new mongoose.Schema(
       enum: ["Pending", "Reviewed", "Accepted", "Rejected"],
       default: "Pending"
     },
+
+    emailSent: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
