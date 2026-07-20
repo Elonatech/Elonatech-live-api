@@ -6,22 +6,20 @@ const { Resend } = require('resend')
 
 const resend = new Resend(process.env.RESEND_API_KEY) // Dead code
 
+// Brevo SMTP relay — reachable from Render (unlike the old cPanel mail server,
+// which timed out from cloud IPs). Uses STARTTLS on port 587.
+// BREVO_SMTP_USER = your Brevo account login email
+// BREVO_SMTP_KEY  = SMTP key generated in Brevo → SMTP & API → SMTP
 const transporter = nodemailer.createTransport({
-  host: "mail.elonatech.com.ng",
-  port: 465,
-  secure: true,
-  // debug: true,
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // STARTTLS on 587
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
+    user: process.env.BREVO_SMTP_USER,
+    pass: process.env.BREVO_SMTP_KEY
   },
-  // mail.elonatech.com.ng's cert chain is incomplete (missing intermediate) —
-  // without this, every send fails with "unable to verify the first certificate"
-  tls: {
-    rejectUnauthorized: false
-  },
-  // Without these, a bad connection to the mail server hangs forever with no
-  // error — the request just sits there indefinitely on the frontend
+  // Without these, a bad connection hangs forever with no error — the request
+  // just sits there indefinitely on the frontend
   connectionTimeout: 15000,
   greetingTimeout: 15000,
   socketTimeout: 20000
@@ -29,6 +27,12 @@ const transporter = nodemailer.createTransport({
 
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Single source of truth for the sender address. Set EMAIL_FROM in the
+// environment to a Brevo-verified sender (a single verified email while the
+// domain DNS propagates; switch to noreply@elonatech.com.ng once the domain
+// is authenticated). Falls back to the domain address if unset.
+const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@elonatech.com.ng";
 
 const cloudinary = require('../lib/cloudinary');
 const streamifier = require('streamifier');
@@ -86,7 +90,7 @@ const jobEmail = async (req, res) => {
 
 
     const mailOptions = {
-      from: 'noreply@elonatech.com.ng',
+      from: EMAIL_FROM,
       // replyTo: 'noreply@elonatech.com.ng',
       to: email,
       bcc: ["recruitment@elonatech.com.ng"],
@@ -283,7 +287,7 @@ const quoteEmail = async (req, res) => {
     }
 
     const mailOptions = {
-      from: "noreply@elonatech.com.ng",
+      from: EMAIL_FROM,
       replyTo: "noreply@elonatech.com.ng",
       to: email,
       bcc: ["info@elonatech.com.ng"],
@@ -468,7 +472,7 @@ const consultEmail = async (req, res) => {
 
 
   const mailOptions = {
-    from: "noreply@elonatech.com.ng",
+    from: EMAIL_FROM,
     replyTo: "noreply@elonatech.com.ng",
     to: email,
     bcc: ["info@elonatech.com.ng"],
@@ -639,7 +643,7 @@ const contactEmail = async (req, res) => {
   }
 
   const mailOptions = {
-    from: "noreply@elonatech.com.ng",
+    from: EMAIL_FROM,
     replyTo: "noreply@elonatech.com.ng",
     to: email,
     bcc: ["contact@elonatech.com.ng"],
@@ -800,7 +804,7 @@ const reasonContactEmail = async (req, res) => {
   }
 
   const mailOptions = {
-    from: "noreply@elonatech.com.ng",
+    from: EMAIL_FROM,
     replyTo: "noreply@elonatech.com.ng",
     to: email,
     bcc: ["contact@elonatech.com.ng"],
@@ -995,7 +999,7 @@ const checkoutEmail = async (req, res) => {
   try {
 
     const mailOptions = {
-      from: "noreply@elonatech.com.ng",
+      from: EMAIL_FROM,
       replyTo: "noreply@elonatech.com.ng",
       to: email,
       bcc: ["billing@elonatech.com.ng"],
@@ -1207,7 +1211,7 @@ const retainerEmail = async (req, res) => {
   }
 
   const mailOptions = {
-    from: "noreply@elonatech.com.ng",
+    from: EMAIL_FROM,
     replyTo: "noreply@elonatech.com.ng",
     to: email,
     bcc: ["info@elonatech.com.ng"],
@@ -1408,7 +1412,7 @@ const sessionEmail = async (req, res) => {
 
   try {
     const mailOptions = {
-      from: 'noreply@elonatech.com.ng',
+      from: EMAIL_FROM,
       replyTo: 'noreply@elonatech.com.ng',
       to: email,
       bcc: ["info@elonatech.com.ng"],
@@ -1614,7 +1618,7 @@ const emptdpEmail = async (req, res) => {
 
   try {
     const mailOptions = {
-      from: 'noreply@elonatech.com.ng',
+      from: EMAIL_FROM,
       // replyTo: 'noreply@elonatech.com.ng',
       to: "training@elonatech.com.ng",
       // bcc: ["recruitment@elonatech.com.ng"],
@@ -1878,7 +1882,7 @@ const igniteEmail = async (req, res) => {
     }
 
     const mailOptions = {
-      from: 'noreply@elonatech.com.ng',
+      from: EMAIL_FROM,
       to: "training@elonatech.com.ng",
       subject: `New ETMPDP Ignite Application — ${fullName}`,
       html: `<!DOCTYPE html>
