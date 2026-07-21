@@ -1,32 +1,81 @@
 
 
-const nodemailer = require('nodemailer');
+// ── Email transport: Brevo HTTP API ──────────────────────────────────────────
+// We send over Brevo's HTTPS API (port 443) rather than SMTP, because Render
+// blocks outbound SMTP connections (ports 465/587) — the SMTP relay timed out
+// from Render with ETIMEDOUT even though it worked locally. The HTTP API uses
+// the normal HTTPS port, which Render never blocks.
+//
+// BREVO_API_KEY = generated in Brevo → SMTP & API → "API keys & MCP" tab
+//                 (starts with "xkeysib-"). Different from the SMTP key.
+//
+// `transporter.sendMail(mailOptions)` keeps the same nodemailer-style
+// interface so every existing call site works unchanged.
 
-const { Resend } = require('resend')
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-const resend = new Resend(process.env.RESEND_API_KEY) // Dead code
+// Accepts "Name <email@x>" or "email@x" and returns Brevo's { email, name? }
+const parseAddress = (addr) => {
+  if (!addr) return null;
+  const m = String(addr).match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
+  if (m) return { email: m[2], name: m[1] || undefined };
+  return { email: String(addr).trim() };
+};
 
-// Brevo SMTP relay — reachable from Render (unlike the old cPanel mail server,
-// which timed out from cloud IPs). Uses STARTTLS on port 587.
-// BREVO_SMTP_USER = your Brevo account login email
-// BREVO_SMTP_KEY  = SMTP key generated in Brevo → SMTP & API → SMTP
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false, // STARTTLS on 587
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_KEY
+const toAddressList = (val) => {
+  if (!val) return undefined;
+  const arr = Array.isArray(val) ? val : [val];
+  const list = arr.map(parseAddress).filter(Boolean);
+  return list.length ? list : undefined;
+};
+
+const transporter = {
+  async sendMail(mailOptions) {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) {
+      throw new Error("BREVO_API_KEY is not set");
+    }
+
+    const payload = {
+      sender: parseAddress(mailOptions.from),
+      to: toAddressList(mailOptions.to),
+      subject: mailOptions.subject,
+      htmlContent: mailOptions.html,
+    };
+
+    const bcc = toAddressList(mailOptions.bcc);
+    if (bcc) payload.bcc = bcc;
+
+    const replyTo = parseAddress(mailOptions.replyTo);
+    if (replyTo) payload.replyTo = replyTo;
+
+    // nodemailer attachments -> Brevo attachments. Our attachments are already
+    // base64 (content is a base64 string with encoding: 'base64').
+    if (Array.isArray(mailOptions.attachments) && mailOptions.attachments.length) {
+      payload.attachment = mailOptions.attachments.map((a) => ({
+        name: a.filename,
+        content: a.encoding === "base64" ? a.content : Buffer.from(a.content).toString("base64"),
+      }));
+    }
+
+    const res = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Brevo API ${res.status}: ${body}`);
+    }
+
+    return res.json();
   },
-  // Without these, a bad connection hangs forever with no error — the request
-  // just sits there indefinitely on the frontend
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 20000
-});
-
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+};
 
 // Single source of truth for the sender address. Set EMAIL_FROM in the
 // environment to a Brevo-verified sender (a single verified email while the
