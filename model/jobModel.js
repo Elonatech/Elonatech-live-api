@@ -52,6 +52,21 @@ const jobSchema = new mongoose.Schema(
       required: true
     },
 
+    // Rich content sections — optional so existing postings still validate.
+    // Admins type bullet points / paragraphs; the public page preserves the
+    // line breaks.
+    responsibilities: {
+      type: String
+    },
+
+    requirements: {
+      type: String
+    },
+
+    benefits: {
+      type: String
+    },
+
     status: {
       type: String,
       enum: ["Active", "Draft", "Closed"],

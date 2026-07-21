@@ -6,9 +6,9 @@ const logAudit = require("../lib/logAudit");
 // POST /api/v1/jobs — create a new job posting
 const createJob = async (req, res) => {
   try {
-    const { title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline } = req.body;
+    const { title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline } = req.body;
 
-    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline });
+    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline });
 
     await logAudit({
       action: "CREATE_JOB",
@@ -75,7 +75,7 @@ const updateJob = async (req, res) => {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const { title, location, employmentType, numberOfOpenings, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, status, hiringTimeline } = req.body;
+    const { title, location, employmentType, numberOfOpenings, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline } = req.body;
     if (title !== undefined) job.title = title;
     if (location !== undefined) job.location = location;
     if (employmentType !== undefined) job.employmentType = employmentType;
@@ -83,6 +83,9 @@ const updateJob = async (req, res) => {
     if (minimumQualification !== undefined) job.minimumQualification = minimumQualification;
     if (jobSummary !== undefined) job.jobSummary = jobSummary;
     if (jobDescription !== undefined) job.jobDescription = jobDescription;
+    if (responsibilities !== undefined) job.responsibilities = responsibilities;
+    if (requirements !== undefined) job.requirements = requirements;
+    if (benefits !== undefined) job.benefits = benefits;
     if (status !== undefined) job.status = status;
     if (numberOfOpenings !== undefined) job.numberOfOpenings = numberOfOpenings;
     if (jobLevel !== undefined) job.jobLevel = jobLevel;

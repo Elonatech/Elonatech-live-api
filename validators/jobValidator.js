@@ -28,6 +28,12 @@ const createJobSchema = z.object({
 
   jobDescription: z.string({ required_error: "Job description is required" }).trim().min(10, "Job description is too short"),
 
+  responsibilities: z.string().trim().optional(),
+
+  requirements: z.string().trim().optional(),
+
+  benefits: z.string().trim().optional(),
+
   status: z.enum(JOB_STATUSES, { errorMap: () => ({ message: `Status must be one of: ${JOB_STATUSES.join(", ")}` }) }).optional(),
 
   hiringTimeline: z.enum(JOB_HIRINGTIMELINE, { errorMap: () => ({ message: `Hiring timeline must be one of: ${JOB_HIRINGTIMELINE.join(", ")}` }) }).optional(),

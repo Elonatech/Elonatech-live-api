@@ -90,6 +90,9 @@ const EtmpdpApplication = require('../model/etmpdpApplicationModel');
 const Quote = require('../model/quoteModel');
 const Job = require('../model/jobModel');
 const JobApplication = require('../model/jobApplicationModel');
+const Consultation = require('../model/consultationModel');
+const Contact = require('../model/contactModel');
+const Retainership = require('../model/retainerModel');
 
 // Uploads a file buffer (PDF or image) to Cloudinary as a raw asset and
 // resolves with its download URL. Used to persist application CVs / letters so
@@ -554,6 +557,16 @@ const consultEmail = async (req, res) => {
   }
 
 
+  let consultation;
+  try {
+    consultation = await Consultation.create({
+      name, email, occupation, challenge, business, cost, invest
+    });
+  } catch (error) {
+    console.error("Consultation save error:", error);
+    return res.status(500).json({ status: "error", message: "Could not submit your request. Please try again." });
+  }
+
 
   const mailOptions = {
     from: EMAIL_FROM,
@@ -687,21 +700,18 @@ const consultEmail = async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
+    consultation.emailSent = true;
+    await consultation.save();
     console.log("Email sent successfully");
-
-    return res.json({
-      status: "success",
-      message: "Consultation request sent successfully"
-    });
-
   } catch (error) {
-    console.error("Email sending error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to send email"
-    });
+    // Consultation already saved — a failed email is not a failed request.
+    console.error("Consultation email error:", error);
   }
 
+  return res.json({
+    status: "success",
+    message: "Consultation request sent successfully"
+  });
 }
 
 const contactEmail = async (req, res) => {
@@ -724,6 +734,16 @@ const contactEmail = async (req, res) => {
   }
   if (!message) {
     return res.status(400).send("Message is Required")
+  }
+
+  let contact;
+  try {
+    contact = await Contact.create({
+      name, email, subject, number, message
+    });
+  } catch (error) {
+    console.error("Contact save error:", error);
+    return res.status(500).json({ status: "error", message: "Could not submit. Please try again." });
   }
 
   const mailOptions = {
@@ -849,20 +869,12 @@ const contactEmail = async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully");
-
-    return res.json({
-      status: "success",
-      message: "Message sent successfully"
-    });
-
+    record.emailSent = true;
+    await record.save();
   } catch (error) {
-    console.error("Email sending error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to send email"
-    });
+    console.error("Contact email error:", error);
   }
+  return res.json({ status: "success", message: "Request sent successfully" });
 }
 
 const reasonContactEmail = async (req, res) => {
@@ -885,6 +897,16 @@ const reasonContactEmail = async (req, res) => {
   }
   if (!message) {
     return res.status(400).send("Message is Required")
+  }
+
+  let contact;
+  try {
+    contact = await Contact.create({
+      name, email, subject, number, message
+    });
+  } catch (error) {
+    console.error("Contact save error:", error);
+    return res.status(500).json({ status: "error", message: "Could not submit. Please try again." });
   }
 
   const mailOptions = {
@@ -1008,22 +1030,15 @@ const reasonContactEmail = async (req, res) => {
         </html>`
   }
 
+
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully");
-
-    return res.json({
-      status: "success",
-      message: "Message sent successfully"
-    });
-
+    record.emailSent = true;
+    await record.save();
   } catch (error) {
-    console.error("Email sending error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to send email"
-    });
+    console.error("Contact email error:", error);
   }
+  return res.json({ status: "success", message: "Request sent successfully" });
 }
 
 const checkoutEmail = async (req, res) => {
@@ -1294,6 +1309,16 @@ const retainerEmail = async (req, res) => {
     return res.status(400).send("Address is Required")
   }
 
+  let record;
+  try {
+    record = await Retainership.create({
+      fullname, company, email, number, service, contract, frequency, days, state, address
+    });
+  } catch (error) {
+    console.error("Retainership save error:", error);
+    return res.status(500).json({ status: "error", message: "Could not submit. Please try again." });
+  }
+
   const mailOptions = {
     from: EMAIL_FROM,
     replyTo: "noreply@elonatech.com.ng",
@@ -1437,24 +1462,16 @@ const retainerEmail = async (req, res) => {
           </table>
         </body>
         </html>`
-  }
+  };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully");
-
-    return res.json({
-      status: "success",
-      message: "Retainer request sent successfully"
-    });
-
+    record.emailSent = true;
+    await record.save();
   } catch (error) {
-    console.error("Email sending error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Failed to send email"
-    });
+    console.error("Retainership email error:", error);
   }
+  return res.json({ status: "success", message: "Request sent successfully" });
 }
 
 const sessionEmail = async (req, res) => {
