@@ -93,6 +93,7 @@ const JobApplication = require('../model/jobApplicationModel');
 const Consultation = require('../model/consultationModel');
 const Contact = require('../model/contactModel');
 const Retainership = require('../model/retainerModel');
+const Notification = require('../model/notificationModel');
 
 // Uploads a file buffer (PDF or image) to Cloudinary as a raw asset and
 // resolves with its download URL. Used to persist application CVs / letters so
@@ -165,6 +166,17 @@ const jobEmail = async (req, res) => {
         employmentStatus: status,
         cv_url,
       });
+
+      try {
+        await Notification.create({
+          type: "NEW_JOB_APPLICATION",
+          message: `${firstname} ${lastname} applied for "${job.title}"`,
+          link: `/dashboard/job-applications?id=${application._id}`,
+          relatedId: application._id,
+        });
+      } catch (notifyError) {
+        console.error("Notification create error:", notifyError);
+      }
     } catch (error) {
       console.error("Job application save error:", error);
       return res.status(500).json({ message: "Could not submit your application. Please try again." });
@@ -1087,6 +1099,17 @@ const checkoutEmail = async (req, res) => {
       items: itemsOrdered,
       cartTotal,
     });
+
+    try {
+      await Notification.create({
+        type: "NEW_ORDER",
+        message: `${firstname} ${lastname} placed an order worth ₦${cartTotal}`,
+        link: `/dashboard/orders?id=${order._id}`,
+        relatedId: order._id,
+      });
+    } catch (notifyError) {
+      console.error("Notification create error:", notifyError);
+    }
   } catch (error) {
     console.error("Checkout save error:", error);
     return res.status(500).json({
