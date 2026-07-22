@@ -869,8 +869,8 @@ const contactEmail = async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    record.emailSent = true;
-    await record.save();
+    contact.emailSent = true;
+    await contact.save();
   } catch (error) {
     console.error("Contact email error:", error);
   }
@@ -1033,8 +1033,8 @@ const reasonContactEmail = async (req, res) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    record.emailSent = true;
-    await record.save();
+    contact.emailSent = true;
+    await contact.save();
   } catch (error) {
     console.error("Contact email error:", error);
   }

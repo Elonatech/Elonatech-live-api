@@ -110,7 +110,7 @@ const refreshAccessToken = async (req, res) => {
 
     const admin = await Admin.findById(decoded.id).select("name email role");
     const payload = { id: decoded.id, role: decoded.role, name: admin?.name, email: admin?.email };
-    const newAccessToken = jwt.sign(payload, config.token_key, { expiresIn: "15m" });
+    const newAccessToken = jwt.sign(payload, config.token_key, { expiresIn: "12h" });
     const newRefreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
 
     await RefreshToken.create({
@@ -276,8 +276,8 @@ const updateAdmin = async (req, res) => {
 const issueTokens = async (admin, res) => {
   const payload = { id: admin._id, role: admin.role, name: admin.name, email: admin.email };
 
-  // Sign a short-lived access token (15 min) — used in request headers as x-access-token
-  const accessToken = jwt.sign(payload, config.token_key, { expiresIn: "15m" });
+  // Sign a short-lived access token (12 hours) — used in request headers as x-access-token
+  const accessToken = jwt.sign(payload, config.token_key, { expiresIn: "12h" });
 
   // Sign a long-lived refresh token (7 days) — used only to get a new access token
   const refreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
