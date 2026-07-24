@@ -131,7 +131,67 @@ const express = require('express');
 const router = express.Router();
 const Comment = require('../model/blogCommentModel');
 const Reply = require('../model/blogReplyModel');
+const Blog = require('../model/blogModel');
 const {verifyToken} = require('../middleware/Admin');
+
+// Get every comment across every blog post, for the admin dashboard —
+// enriched with the blog's title/slug and a reply count per comment.
+// Registered before /comments/:blogId so "admin" is never treated as a blogId.
+router.get('/comments/admin/all', verifyToken, async (req, res) => {
+  try {
+    const comments = await Comment.find().sort({ createdAt: -1 }).lean();
+
+    const blogIds = [...new Set(comments.map((c) => c.blogId))];
+    const blogs = await Blog.find({ _id: { $in: blogIds } }, 'title slug').lean();
+    const blogMap = Object.fromEntries(blogs.map((b) => [String(b._id), b]));
+
+    const commentIds = comments.map((c) => c._id);
+    const replyCounts = await Reply.aggregate([
+      { $match: { commentId: { $in: commentIds.map(String) } } },
+      { $group: { _id: '$commentId', count: { $sum: 1 } } },
+    ]);
+    const replyCountMap = Object.fromEntries(replyCounts.map((r) => [r._id, r.count]));
+
+    const enriched = comments.map((c) => ({
+      ...c,
+      blogTitle: blogMap[c.blogId]?.title || 'Deleted post',
+      blogSlug: blogMap[c.blogId]?.slug || null,
+      replyCount: replyCountMap[String(c._id)] || 0,
+    }));
+
+    res.json(enriched);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin reply — posted from the dashboard, uses the logged-in admin's own
+// name/email (not client-supplied) and is flagged isAdmin for the public page.
+router.post('/replies/admin', verifyToken, async (req, res) => {
+  const { blogId, commentId, content } = req.body;
+
+  if (!content || content.trim().length === 0) {
+    return res.status(400).json({ message: 'Content cannot be empty' });
+  }
+  if (!blogId || !commentId) {
+    return res.status(400).json({ message: 'blogId and commentId are required' });
+  }
+
+  try {
+    const newReply = new Reply({
+      blogId,
+      commentId,
+      content,
+      userName: req.user.name || 'Elonatech Team',
+      email: req.user.email,
+      isAdmin: true,
+    });
+    await newReply.save();
+    res.status(201).json(newReply);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
 // Get comments for a specific blog post
 router.get('/comments/:blogId', async (req, res) => {

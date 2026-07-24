@@ -18,6 +18,14 @@ const RefreshTokenSchema = new mongoose.Schema({
     required: true,
   },
 
+  // Carries the "Remember me" choice across silent refreshes, so the
+  // longer session length persists instead of resetting to the default
+  // on the next token rotation.
+  rememberMe: {
+    type: Boolean,
+    default: false,
+  },
+
 }, { timestamps: true })
 
 

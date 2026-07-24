@@ -25,6 +25,12 @@ const replySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Flags replies posted by an admin from the dashboard, so the public
+  // blog page can show an "Elonatech Team" badge instead of a regular name.
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

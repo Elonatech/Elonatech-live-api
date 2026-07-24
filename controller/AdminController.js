@@ -34,7 +34,7 @@ const adminRegister = async (req, res) => {
 //  Sign In
 const adminLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     // check if Admin exist
     const admin = await Admin.findOne({ email: email });
@@ -51,13 +51,14 @@ const adminLogin = async (req, res) => {
     // Only the master account uses 2FA — check if it's the master AND has 2FA turned on
     if (admin.isMaster && admin.totpEnabled) {
       // Don't issue the JWT yet — tell the frontend to ask for the 6-digit code
-      // adminId is sent so the frontend can pass it back in the next request
-      return res.status(200).json({ requireTotp: true, adminId: admin._id });
+      // adminId is sent so the frontend can pass it back in the next request.
+      // rememberMe travels with it so step 2 can still honor the checkbox.
+      return res.status(200).json({ requireTotp: true, adminId: admin._id, rememberMe: !!rememberMe });
     }
 
     // Not a master account (or 2FA not set up yet) — issue the JWT normally
     await logAudit({ action: "LOGIN", performedBy: { id: admin._id, name: admin.name, email: admin.email }, details: "Logged in successfully" });
-    return await issueTokens(admin, res);
+    return await issueTokens(admin, res, !!rememberMe);
   } catch (error) {
     logger.error("Login error:", error);
     return res.status(500).json({ message: "Server Error" });
@@ -105,25 +106,32 @@ const refreshAccessToken = async (req, res) => {
       return res.status(401).json({ message: "Refresh token has been revoked" });
     }
 
-    // Token rotation — delete old, create new
+    // Token rotation — delete old, create new. Carry the original "remember
+    // me" choice forward so the longer session doesn't get reset to the
+    // 7-day default on the next silent refresh.
+    const rememberMe = !!stored.rememberMe;
     await RefreshToken.deleteOne({ token });
 
     const admin = await Admin.findById(decoded.id).select("name email role");
     const payload = { id: decoded.id, role: decoded.role, name: admin?.name, email: admin?.email };
     const newAccessToken = jwt.sign(payload, config.token_key, { expiresIn: "12h" });
-    const newRefreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
+    const refreshExpiryMs = (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
+    const newRefreshToken = jwt.sign(payload, config.refresh_token_key, {
+      expiresIn: rememberMe ? "30d" : "7d",
+    });
 
     await RefreshToken.create({
       adminId: decoded.id,
       token: newRefreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + refreshExpiryMs),
+      rememberMe,
     });
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: refreshExpiryMs,
     });
 
     return res.status(200).json({ access: newAccessToken });
@@ -273,20 +281,25 @@ const updateAdmin = async (req, res) => {
 // ─── Shared helper ────────────────────────────────────────────────────────────
 // issueTokens is called after login is fully verified (password + TOTP if needed)
 // It creates both tokens, stores the refresh token in the DB, and sends the response
-const issueTokens = async (admin, res) => {
+const issueTokens = async (admin, res, rememberMe = false) => {
   const payload = { id: admin._id, role: admin.role, name: admin.name, email: admin.email };
 
   // Sign a short-lived access token (12 hours) — used in request headers as x-access-token
   const accessToken = jwt.sign(payload, config.token_key, { expiresIn: "12h" });
 
-  // Sign a long-lived refresh token (7 days) — used only to get a new access token
-  const refreshToken = jwt.sign(payload, config.refresh_token_key, { expiresIn: "7d" });
+  // Refresh token controls how long the admin stays logged in before needing
+  // to re-enter their password. "Remember me" extends this from 7 days to 30.
+  const refreshExpiryMs = (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
+  const refreshToken = jwt.sign(payload, config.refresh_token_key, {
+    expiresIn: rememberMe ? "30d" : "7d",
+  });
 
   // Save the refresh token to the database so we can revoke it on logout
   await RefreshToken.create({
     adminId: admin._id,
     token: refreshToken,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    expiresAt: new Date(Date.now() + refreshExpiryMs),
+    rememberMe,
   });
 
   // Send the refresh token as an httpOnly cookie — the browser stores it automatically
@@ -295,7 +308,7 @@ const issueTokens = async (admin, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only sent over HTTPS in production
     sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // lax in dev so cookies work across ports (3000 → 8000)
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: refreshExpiryMs,
   });
 
   // Send the access token in the response body — the frontend stores this in localStorage
@@ -402,7 +415,7 @@ const verifyTotp = async (req, res) => {
   try {
     // adminId was sent by the frontend from the first login response (requireTotp: true, adminId: ...)
     // token is the 6-digit code from  Authenticator
-    const { adminId, token } = req.body;
+    const { adminId, token, rememberMe } = req.body;
 
     // Basic check — both fields must be present
     if (!adminId || !token) {
@@ -437,7 +450,7 @@ const verifyTotp = async (req, res) => {
     await logAudit({ action: "TOTP_LOGIN", performedBy: { id: admin._id, name: admin.name, email: admin.email }, details: "Logged in with 2FA code" });
 
     // Code is correct — now issue the JWT and log them in fully
-    return await issueTokens(admin, res);
+    return await issueTokens(admin, res, !!rememberMe);
   } catch (error) {
     logger.error("Verify TOTP login error", { error });
     return res.status(500).json({ message: "Server Error" });
