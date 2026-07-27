@@ -101,10 +101,16 @@ const updateJob = async (req, res) => {
       // Description changed but no explicit summary was sent — re-derive it.
       job.jobSummary = deriveJobSummary(jobDescription);
     }
-    if (jobDescription !== undefined) job.jobDescription = jobDescription;
-    if (responsibilities !== undefined) job.responsibilities = responsibilities;
-    if (requirements !== undefined) job.requirements = requirements;
-    if (benefits !== undefined) job.benefits = benefits;
+    if (jobDescription !== undefined) {
+      job.jobDescription = jobDescription;
+      // These fields are retired — the admin form now writes everything
+      // (including Responsibilities/Requirements/Benefits) into the single
+      // Job Description box. Clear any leftovers from before that change so
+      // old postings don't show duplicate sections on the public page.
+      job.responsibilities = "";
+      job.requirements = "";
+      job.benefits = "";
+    }
     if (status !== undefined) job.status = status;
     if (numberOfOpenings !== undefined) job.numberOfOpenings = numberOfOpenings;
     if (jobLevel !== undefined) job.jobLevel = jobLevel;
