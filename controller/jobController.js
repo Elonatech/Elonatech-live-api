@@ -3,12 +3,26 @@ const JobApplication = require("../model/jobApplicationModel");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
 
+// The admin form no longer has a separate Job Summary field — it's derived
+// from the rich-text Job Description so the career listing card (which
+// reads jobSummary) keeps working without a manual entry step.
+const deriveJobSummary = (html) => {
+  const plainText = String(html || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!plainText) return "";
+  return plainText.length > 160 ? `${plainText.slice(0, 157)}...` : plainText;
+};
+
 // POST /api/v1/jobs — create a new job posting
 const createJob = async (req, res) => {
   try {
     const { title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline } = req.body;
 
-    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline });
+    const finalJobSummary = jobSummary?.trim() || deriveJobSummary(jobDescription);
+
+    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary: finalJobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline });
 
     await logAudit({
       action: "CREATE_JOB",
@@ -81,7 +95,12 @@ const updateJob = async (req, res) => {
     if (employmentType !== undefined) job.employmentType = employmentType;
     if (workplaceType !== undefined) job.workplaceType = workplaceType;
     if (minimumQualification !== undefined) job.minimumQualification = minimumQualification;
-    if (jobSummary !== undefined) job.jobSummary = jobSummary;
+    if (jobSummary !== undefined) {
+      job.jobSummary = jobSummary;
+    } else if (jobDescription !== undefined) {
+      // Description changed but no explicit summary was sent — re-derive it.
+      job.jobSummary = deriveJobSummary(jobDescription);
+    }
     if (jobDescription !== undefined) job.jobDescription = jobDescription;
     if (responsibilities !== undefined) job.responsibilities = responsibilities;
     if (requirements !== undefined) job.requirements = requirements;

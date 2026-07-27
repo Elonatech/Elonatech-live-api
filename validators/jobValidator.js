@@ -24,7 +24,9 @@ const createJobSchema = z.object({
 
   minimumQualification: z.string({ required_error: "Minimum qualification is required" }).trim().min(2, "Minimum qualification is required"),
 
-  jobSummary: z.string({ required_error: "Job summary is required" }).trim().min(10, "Job summary is too short"),
+  // No longer entered by hand — auto-derived from jobDescription in the
+  // controller, so it's optional on input.
+  jobSummary: z.string().trim().optional(),
 
   jobDescription: z.string({ required_error: "Job description is required" }).trim().min(10, "Job description is too short"),
 
