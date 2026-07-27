@@ -20,10 +20,15 @@ const fs = require("fs");
 const path = require("path");
 const cloudinary = require("../lib/cloudinary");
 
-const INPUT_FILE = path.join(__dirname, "cloudinary-filenames.txt");
-const MAP_OUT = path.join(__dirname, "cloudinary-url-map.json");
-const AMBIGUOUS_OUT = path.join(__dirname, "cloudinary-ambiguous.json");
-const NOT_FOUND_OUT = path.join(__dirname, "cloudinary-not-found.txt");
+// Pass a filename as the first CLI arg to use a different input list, e.g.:
+//   node scripts/findCloudinaryUrls.js cloudinary-filenames-web.txt
+// Output files are named to match, so separate runs don't overwrite each other.
+const inputName = process.argv[2] || "cloudinary-filenames.txt";
+const suffix = inputName.replace(/^cloudinary-filenames/, "").replace(/\.txt$/, "");
+const INPUT_FILE = path.join(__dirname, inputName);
+const MAP_OUT = path.join(__dirname, `cloudinary-url-map${suffix}.json`);
+const AMBIGUOUS_OUT = path.join(__dirname, `cloudinary-ambiguous${suffix}.json`);
+const NOT_FOUND_OUT = path.join(__dirname, `cloudinary-not-found${suffix}.txt`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
