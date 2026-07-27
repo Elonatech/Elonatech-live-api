@@ -9,20 +9,25 @@ const JOB_HIRINGTIMELINE = ["2 weeks", "1 Month", "2 Months", "3 Months"];
 const createJobSchema = z.object({
   title: z.string({ required_error: "Title is required" }).trim().min(2, "Title must be at least 2 characters"),
 
-  location: z.string({ required_error: "Location is required" }).trim().min(2, "Location is required"),
+  // Location, employment type, workplace type, job level, and minimum
+  // qualification are no longer separate form fields — everything goes into
+  // jobDescription now. Kept optional (not removed) for backward
+  // compatibility with older postings that still have this data.
+  location: z.string().trim().optional(),
 
   numberOfOpenings: z.coerce
-    .number({ required_error: "Number of openings is required" })
+    .number()
     .int("Number of openings must be a whole number")
-    .min(1, "Number of openings must be at least 1"),
+    .min(1, "Number of openings must be at least 1")
+    .optional(),
 
-  employmentType: z.enum(JOB_EMPLOYMENTTYPE, { errorMap: () => ({ message: `Employment type must be one of: ${JOB_EMPLOYMENTTYPE.join(", ")}` }) }),
+  employmentType: z.enum(JOB_EMPLOYMENTTYPE, { errorMap: () => ({ message: `Employment type must be one of: ${JOB_EMPLOYMENTTYPE.join(", ")}` }) }).optional(),
 
-  workplaceType: z.enum(JOB_WORKPLACETYPE, { errorMap: () => ({ message: `Workplace type must be one of: ${JOB_WORKPLACETYPE.join(", ")}` }) }),
+  workplaceType: z.enum(JOB_WORKPLACETYPE, { errorMap: () => ({ message: `Workplace type must be one of: ${JOB_WORKPLACETYPE.join(", ")}` }) }).optional(),
 
-  jobLevel: z.enum(JOB_JOBLEVEL, { errorMap: () => ({ message: `Job level must be one of: ${JOB_JOBLEVEL.join(", ")}` }) }),
+  jobLevel: z.enum(JOB_JOBLEVEL, { errorMap: () => ({ message: `Job level must be one of: ${JOB_JOBLEVEL.join(", ")}` }) }).optional(),
 
-  minimumQualification: z.string({ required_error: "Minimum qualification is required" }).trim().min(2, "Minimum qualification is required"),
+  minimumQualification: z.string().trim().optional(),
 
   // No longer entered by hand — auto-derived from jobDescription in the
   // controller, so it's optional on input.

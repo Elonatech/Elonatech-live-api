@@ -8,26 +8,27 @@ const jobSchema = new mongoose.Schema(
       required: true
     },
 
+    // Location, employment type, workplace type, job level, and minimum
+    // qualification are no longer entered separately — the admin form now
+    // writes everything into the single jobDescription rich-text box. These
+    // stay optional (not removed) so older postings that still have this
+    // data keep working on the career page filters and Role Details sidebar.
     location: {
-      type: String,
-      required: true
+      type: String
     },
 
     numberOfOpenings: {
-      type: Number,
-      required: true
+      type: Number
     },
 
     employmentType: {
       type: String,
-      enum: ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance", "Mentorship", "Volunteer", "Other"],
-      required: true
+      enum: ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance", "Mentorship", "Volunteer", "Other"]
     },
 
     workplaceType: {
       type: String,
-      enum: ["On-site", "Hybrid", "Remote"],
-      required: true
+      enum: ["On-site", "Hybrid", "Remote"]
     },
 
     jobSummary: {
@@ -37,13 +38,11 @@ const jobSchema = new mongoose.Schema(
 
     jobLevel: {
       type: String,
-      enum: ["No Experience", "Internship & Graduate", "Entry-level", "Mid-level", "Senior-level", "Executive-level"],
-      required: true
+      enum: ["No Experience", "Internship & Graduate", "Entry-level", "Mid-level", "Senior-level", "Executive-level"]
     },
 
     minimumQualification: {
-      type: String,
-      required: true
+      type: String
     },
 
 
