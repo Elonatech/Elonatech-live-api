@@ -129,10 +129,21 @@
  */
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const Comment = require('../model/blogCommentModel');
 const Reply = require('../model/blogReplyModel');
 const Blog = require('../model/blogModel');
 const {verifyToken} = require('../middleware/Admin');
+
+// Public, unauthenticated write endpoints — cap at 5 posts per 5 minutes per IP
+// to block scripted comment spam while still allowing a real back-and-forth.
+const commentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many comments from this address. Please slow down and try again shortly." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Get every comment across every blog post, for the admin dashboard —
 // enriched with the blog's title/slug and a reply count per comment.
@@ -207,7 +218,7 @@ router.get('/comments/:blogId', async (req, res) => {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Create a new comment
-router.post('/comments', async (req, res) => {
+router.post('/comments', commentLimiter, async (req, res) => {
   const { blogId, content, userName, email, website, createdAt } = req.body;
 
   // Basic validation for emoji/text content
@@ -268,7 +279,7 @@ router.get('/replies/:commentId', async (req, res) => {
 });
 
 // Create a new reply
-router.post('/replies', async (req, res) => {
+router.post('/replies', commentLimiter, async (req, res) => {
   const { blogId, commentId, content, userName, email, website, createdAt } = req.body;
 
   // Basic validation for emoji/text content

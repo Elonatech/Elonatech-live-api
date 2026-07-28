@@ -83,6 +83,11 @@ const transporter = {
 // is authenticated). Falls back to the domain address if unset.
 const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@elonatech.com.ng";
 
+// Shared across every public form handler below — required-field presence was
+// already checked per form, but none of them checked the email was actually
+// well-formed before using it as the send-to address and DB record.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const cloudinary = require('../lib/cloudinary');
 const streamifier = require('streamifier');
 const Order = require('../model/orderModel');
@@ -106,6 +111,74 @@ const uploadBufferToCloudinary = (buffer, folder = "etmpdp") =>
     );
     streamifier.createReadStream(buffer).pipe(stream);
   });
+
+// Builds the applicant-facing confirmation email for ETMPDP training
+// applications (Regular and Ignite). This is separate from the internal
+// notification sent to training@elonatech.com.ng — that one alerts the team,
+// this one lets the applicant know their submission was received.
+const buildEtmpdpConfirmationEmail = ({ fullName, programLabel }) => `<!DOCTYPE html>
+  <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
+  <head>
+    <title>Application Received</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]-->
+    <!--[if !mso]><!-->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet" type="text/css">
+    <!--<![endif]-->
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0; }
+      a[x-apple-data-detectors] { color: inherit !important; text-decoration: inherit !important; }
+      #MessageViewBody a { color: inherit; text-decoration: none; }
+      p { line-height: inherit; }
+    </style>
+  </head>
+  <body style="background-color: #e8ecf0; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+      style="mso-table-lspace:0pt; mso-table-rspace:0pt; background-color:#e8ecf0;">
+      <tbody><tr><td style="padding: 24px 0;">
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; border-radius:8px 8px 0 0; overflow:hidden; background-color:#1a3a6b;">
+          <tbody><tr>
+            <td style="padding: 28px 40px; text-align:center;">
+              <img src="https://elonatech.com.ng/static/media/elonatech.c6083e7d06b4cbab7d90.png"
+                width="180" height="auto" alt="Elonatech" style="display:block; margin:0 auto 16px; height:auto; border:0;">
+              <h1 style="margin:0; color:#ffffff; font-family: Oswald, sans-serif; font-size:26px; font-weight:700; line-height:1.2;">
+                Application Received
+              </h1>
+            </td>
+          </tr></tbody>
+        </table>
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; background-color:#ffffff;">
+          <tbody><tr><td style="padding: 32px 40px;">
+            <p style="margin:0 0 16px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:15px; color:#222222;">Hi ${fullName},</p>
+            <p style="margin:0 0 16px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333; line-height:1.7;">
+              Thank you for applying to the <strong>${programLabel}</strong>. We've received your application and our team will review it shortly. If you're shortlisted, we'll reach out using the contact details you provided.
+            </p>
+            <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333;">
+              &mdash; The Elonatech Training Team
+            </p>
+          </td></tr></tbody>
+        </table>
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="mso-table-lspace:0pt; mso-table-rspace:0pt; width:620px; max-width:100%; margin:0 auto; background-color:#11253d; border-radius:0 0 8px 8px; overflow:hidden;">
+          <tbody><tr>
+            <td style="padding: 24px 40px; text-align:center;">
+              <p style="margin:0 0 4px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:12px; font-weight:700; color:#ffffff;">
+                Elonatech Nigeria Limited &copy; ${new Date().getFullYear()} &mdash; All rights reserved
+              </p>
+              <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:11px; color:#7a9cc4;">
+                You can view our <a href="http://www.elonatech.com.ng/policy" target="_blank" rel="noopener" style="color:#56B500; text-decoration:underline;">Privacy Policy</a>.
+              </p>
+            </td>
+          </tr></tbody>
+        </table>
+      </td></tr></tbody>
+    </table>
+  </body>
+  </html>`;
 
 const jobEmail = async (req, res) => {
 
@@ -131,6 +204,10 @@ const jobEmail = async (req, res) => {
       return res.status(400).json({
         message: "Please ensure all fields are filled correctly",
       });
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
     }
 
     if (req.fileValidationError) {
@@ -372,6 +449,10 @@ const quoteEmail = async (req, res) => {
       return res.status(400).send("Please Fill All Fields")
     }
 
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+
     // Persist the quote request FIRST so a failed notification email never
     // loses the lead. The form's `letter` maps to the model's `description`.
     let quote;
@@ -550,6 +631,9 @@ const consultEmail = async (req, res) => {
 
   if (!email) {
     return res.status(400).send("Email is Required")
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
   }
 
   if (!occupation) {
@@ -737,6 +821,9 @@ const contactEmail = async (req, res) => {
   if (!email) {
     return res.status(400).send("Email is Required")
   }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
+  }
 
   if (!subject) {
     return res.status(400).send("Subject is Required")
@@ -899,6 +986,9 @@ const reasonContactEmail = async (req, res) => {
   }
   if (!email) {
     return res.status(400).send("Email is Required")
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
   }
 
   if (!subject) {
@@ -1070,6 +1160,9 @@ const checkoutEmail = async (req, res) => {
 
   if (!email) {
     return res.status(400).send("Email is Required")
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
   }
   if (!number) {
     return res.status(400).send("Number is Required")
@@ -1312,6 +1405,9 @@ const retainerEmail = async (req, res) => {
   if (!email) {
     return res.status(400).send("Email is Required")
   }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
+  }
   if (!number) {
     return res.status(400).send("Phone Number is Required")
   }
@@ -1509,6 +1605,9 @@ const sessionEmail = async (req, res) => {
   if (!email) {
     return res.status(400).send("Email is Required")
   }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
+  }
 
   if (!phone) {
     return res.status(400).send("Phone is Required")
@@ -1700,6 +1799,9 @@ const emptdpEmail = async (req, res) => {
   }
   if (!email) {
     return res.status(400).send("email is required")
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).send("Please enter a valid email address")
   }
   if (!location) {
     return res.status(400).send("location is required")
@@ -1936,6 +2038,19 @@ const emptdpEmail = async (req, res) => {
       // Application already saved — a failed email is not a failed submission.
       console.error("Error sending email:", error);
     }
+
+    // Applicant confirmation disabled — team doesn't want applicants emailed for this program.
+    // try {
+    //   await transporter.sendMail({
+    //     from: EMAIL_FROM,
+    //     to: email,
+    //     subject: "We've received your training application — Elonatech",
+    //     html: buildEtmpdpConfirmationEmail({ fullName, programLabel: `${areaOfInterest} Training Programme` }),
+    //   });
+    // } catch (error) {
+    //   console.error("ETMPDP (Regular) applicant confirmation email error:", error);
+    // }
+
     return res.json({ status: "success", message: "Application submitted successfully" });
   } catch (error) {
     console.error("Email sending error:", error);
@@ -1958,6 +2073,9 @@ const igniteEmail = async (req, res) => {
     }
     if (!email) {
       return res.status(400).send("email is required")
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).send("Please enter a valid email address")
     }
     if (!location) {
       return res.status(400).send("location is required")
@@ -2203,6 +2321,18 @@ const igniteEmail = async (req, res) => {
       // Application already saved — a failed email is not a failed submission.
       console.error("Ignite email error:", error);
     }
+
+    // Applicant confirmation disabled — team doesn't want applicants emailed for this program.
+    // try {
+    //   await transporter.sendMail({
+    //     from: EMAIL_FROM,
+    //     to: email,
+    //     subject: "We've received your ETMPDP Ignite application — Elonatech",
+    //     html: buildEtmpdpConfirmationEmail({ fullName, programLabel: "ETMPDP Ignite Programme" }),
+    //   });
+    // } catch (error) {
+    //   console.error("Ignite applicant confirmation email error:", error);
+    // }
 
     res.json({
       status: "success",

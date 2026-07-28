@@ -126,10 +126,26 @@
 // emailRoute.js
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
 const email = require("../utils/email");
 // import * as email from "../utils/email.js";
 const mailchimp = require("../utils/mailChip");
 const upload = require("../lib/careerPdf");
+
+// Every route here is public (no login required) and triggers a Cloudinary
+// upload and/or an outbound Brevo email per request, so it's the part of the
+// API most exposed to anonymous spam/abuse. 10 requests per 15 minutes per IP
+// is generous for a genuine visitor filling out one form, but blocks scripted
+// spam of the mailbox/upload quota.
+const formLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many submissions from this address. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.use(formLimiter);
 
 router.post("/job", upload.single("file"), email.jobEmail);
 router.post("/quote", email.quoteEmail);
