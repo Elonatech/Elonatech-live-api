@@ -15,14 +15,80 @@ const deriveJobSummary = (html) => {
   return plainText.length > 160 ? `${plainText.slice(0, 157)}...` : plainText;
 };
 
+// Best-effort extraction of the structured fields (Location, Employment
+// Type, Workplace Type, Job Level, Minimum Qualification, Openings, Hiring
+// Timeline) from lines the admin types inside the single Job Description
+// box, e.g. "Job Level: Internship". These fields no longer have their own
+// form inputs — this is what still populates the career page filters and
+// the public job page's "Role details" sidebar.
+const JOB_EMPLOYMENT_TYPES = ["Full-Time", "Part-Time", "Contract", "Internship", "Freelance", "Mentorship", "Volunteer", "Other"];
+const JOB_WORKPLACE_TYPES = ["On-site", "Hybrid", "Remote"];
+const JOB_LEVELS = ["No Experience", "Internship & Graduate", "Entry-level", "Mid-level", "Senior-level", "Executive-level"];
+const JOB_HIRING_TIMELINES = ["2 weeks", "1 Month", "2 Months", "3 Months"];
+
+// Strips a trailing "s" too, so "2 Month" (typo/typed without the plural)
+// still matches the enum value "2 Months".
+const normalize = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "").replace(/s$/, "");
+
+const matchEnum = (value, enumList) => {
+  if (!value) return undefined;
+  const target = normalize(value);
+  return enumList.find((e) => normalize(e) === target || target.includes(normalize(e)));
+};
+
+const extractLabelValue = (plainText, labels) => {
+  for (const label of labels) {
+    const match = plainText.match(new RegExp(`${label}\\s*:\\s*([^\\n]+)`, "i"));
+    if (match) return match[1].trim();
+  }
+  return undefined;
+};
+
+const deriveStructuredFields = (html) => {
+  const plainText = String(html || "")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\r/g, "");
+
+  const openingsRaw = extractLabelValue(plainText, ["Number of Openings", "Openings"]);
+  const openingsNum = openingsRaw ? parseInt(openingsRaw, 10) : NaN;
+
+  return {
+    location: extractLabelValue(plainText, ["Location"]),
+    employmentType: matchEnum(extractLabelValue(plainText, ["Employment Type"]), JOB_EMPLOYMENT_TYPES),
+    workplaceType: matchEnum(extractLabelValue(plainText, ["Workplace Type", "Workplace"]), JOB_WORKPLACE_TYPES),
+    jobLevel: matchEnum(extractLabelValue(plainText, ["Job Level", "Experience Level", "Experience"]), JOB_LEVELS),
+    minimumQualification: extractLabelValue(plainText, ["Minimum Qualification"]),
+    numberOfOpenings: Number.isNaN(openingsNum) ? undefined : openingsNum,
+    hiringTimeline: matchEnum(extractLabelValue(plainText, ["Hiring Timeline"]), JOB_HIRING_TIMELINES),
+  };
+};
+
 // POST /api/v1/jobs — create a new job posting
 const createJob = async (req, res) => {
   try {
     const { title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline } = req.body;
 
     const finalJobSummary = jobSummary?.trim() || deriveJobSummary(jobDescription);
+    const extracted = deriveStructuredFields(jobDescription);
 
-    const job = await Job.create({ title, location, numberOfOpenings, employmentType, workplaceType, jobLevel, minimumQualification, jobSummary: finalJobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline });
+    const job = await Job.create({
+      title,
+      location: location ?? extracted.location,
+      numberOfOpenings: numberOfOpenings ?? extracted.numberOfOpenings,
+      employmentType: employmentType ?? extracted.employmentType,
+      workplaceType: workplaceType ?? extracted.workplaceType,
+      jobLevel: jobLevel ?? extracted.jobLevel,
+      minimumQualification: minimumQualification ?? extracted.minimumQualification,
+      jobSummary: finalJobSummary,
+      jobDescription,
+      responsibilities,
+      requirements,
+      benefits,
+      status,
+      hiringTimeline: hiringTimeline ?? extracted.hiringTimeline,
+    });
 
     await logAudit({
       action: "CREATE_JOB",
@@ -91,10 +157,34 @@ const updateJob = async (req, res) => {
 
     const { title, location, employmentType, numberOfOpenings, workplaceType, jobLevel, minimumQualification, jobSummary, jobDescription, responsibilities, requirements, benefits, status, hiringTimeline } = req.body;
     if (title !== undefined) job.title = title;
+
+    const extracted = jobDescription !== undefined ? deriveStructuredFields(jobDescription) : {};
+
+    // Only overwrite a field when something was actually found — a failed
+    // match (e.g. wording the parser doesn't recognize) leaves the existing
+    // value alone instead of wiping it out. Best-effort improve, never worse
+    // than what was already there.
     if (location !== undefined) job.location = location;
+    else if (extracted.location !== undefined) job.location = extracted.location;
+
     if (employmentType !== undefined) job.employmentType = employmentType;
+    else if (extracted.employmentType !== undefined) job.employmentType = extracted.employmentType;
+
     if (workplaceType !== undefined) job.workplaceType = workplaceType;
+    else if (extracted.workplaceType !== undefined) job.workplaceType = extracted.workplaceType;
+
     if (minimumQualification !== undefined) job.minimumQualification = minimumQualification;
+    else if (extracted.minimumQualification !== undefined) job.minimumQualification = extracted.minimumQualification;
+
+    if (numberOfOpenings !== undefined) job.numberOfOpenings = numberOfOpenings;
+    else if (extracted.numberOfOpenings !== undefined) job.numberOfOpenings = extracted.numberOfOpenings;
+
+    if (jobLevel !== undefined) job.jobLevel = jobLevel;
+    else if (extracted.jobLevel !== undefined) job.jobLevel = extracted.jobLevel;
+
+    if (hiringTimeline !== undefined) job.hiringTimeline = hiringTimeline;
+    else if (extracted.hiringTimeline !== undefined) job.hiringTimeline = extracted.hiringTimeline;
+
     if (jobSummary !== undefined) {
       job.jobSummary = jobSummary;
     } else if (jobDescription !== undefined) {
@@ -112,9 +202,6 @@ const updateJob = async (req, res) => {
       job.benefits = "";
     }
     if (status !== undefined) job.status = status;
-    if (numberOfOpenings !== undefined) job.numberOfOpenings = numberOfOpenings;
-    if (jobLevel !== undefined) job.jobLevel = jobLevel;
-    if (hiringTimeline !== undefined) job.hiringTimeline = hiringTimeline;
 
     await job.save({ validateModifiedOnly: true });
 
