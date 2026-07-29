@@ -1,22 +1,52 @@
 const JobApplication = require("../model/jobApplicationModel");
 const logger = require("../lib/logger");
 
-const APPLICATION_STATUSES = ["Pending", "Reviewed", "Accepted", "Rejected"];
+const APPLICATION_STATUSES = ["Pending", "In Review", "Reviewed", "Accepted", "Rejected"];
 
-// GET /api/v1/job-applications/all — admin list, newest first.
-// Optional ?job=<jobId> filter, used by the "N applications" link on the
-// Career Jobs page.
+// Whitelisted so ?sortBy=<anything> can't be used to sort on/probe
+// arbitrary fields — only fields actually shown in the admin table.
+const SORTABLE_FIELDS = ["createdAt", "firstname", "lastname", "status"];
+
+// GET /api/v1/job-applications/all — admin list, paginated.
+// Optional filters: ?job=<jobId> (from the "N applications" link on the
+// Career Jobs page), ?status=<Pending|Reviewed|Accepted|Rejected>.
+// Optional sort: ?sortBy=<field>&sortOrder=<asc|desc> (defaults to newest
+// first). Optional ?page=&limit= (defaults to page 1, 20 per page) — this
+// list has no cap otherwise, so a busy job posting with hundreds of
+// applicants would load them all in a single request.
 const getAllApplications = async (req, res) => {
   try {
     const filter = {};
     if (req.query.job) filter.job = req.query.job;
+    if (req.query.status && APPLICATION_STATUSES.includes(req.query.status)) {
+      filter.status = req.query.status;
+    }
 
-    const applications = await JobApplication.find(filter)
-      .populate("job", "title location employmentType status")
-      .sort({ createdAt: -1 })
-      .lean();
+    const sortBy = SORTABLE_FIELDS.includes(req.query.sortBy) ? req.query.sortBy : "createdAt";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
 
-    return res.status(200).json({ success: true, count: applications.length, applications });
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    const [applications, total] = await Promise.all([
+      JobApplication.find(filter)
+        .populate("job", "title location employmentType status")
+        .sort({ [sortBy]: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      JobApplication.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      applications,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     logger.error("Get all job applications error", { error });
     return res.status(500).json({ message: "Server Error" });

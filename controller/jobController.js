@@ -3,9 +3,9 @@ const JobApplication = require("../model/jobApplicationModel");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
 
-// The admin form no longer has a separate Job Summary field — it's derived
-// from the rich-text Job Description so the career listing card (which
-// reads jobSummary) keeps working without a manual entry step.
+// Fallback for older postings saved without an explicit Job Summary —
+// derives a short teaser from the rich-text Job Description so the career
+// listing card (which reads jobSummary) still has something to show.
 const deriveJobSummary = (html) => {
   const plainText = String(html || "")
     .replace(/<[^>]*>/g, " ")
@@ -103,10 +103,33 @@ const createJob = async (req, res) => {
   }
 };
 
-// GET /api/v1/jobs/all — admin list, every status, with application counts
+// Whitelisted so ?sortBy=<anything> can't be used to sort on/probe
+// arbitrary fields — only fields actually shown in the admin table.
+const JOB_SORTABLE_FIELDS = ["createdAt", "title", "status"];
+const JOB_STATUSES = ["Active", "Draft", "Closed"];
+
+// GET /api/v1/jobs/all — admin list, every status by default, with
+// application counts. Optional ?status=<Active|Draft|Closed> filter,
+// ?sortBy=<field>&sortOrder=<asc|desc> (defaults to newest first), and
+// ?page=&limit= (defaults to page 1, 50 per page).
 const getAllJobsAdmin = async (req, res) => {
   try {
-    const jobs = await Job.find().sort({ createdAt: -1 }).lean();
+    const filter = {};
+    if (req.query.status && JOB_STATUSES.includes(req.query.status)) {
+      filter.status = req.query.status;
+    }
+
+    const sortBy = JOB_SORTABLE_FIELDS.includes(req.query.sortBy) ? req.query.sortBy : "createdAt";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      Job.find(filter).sort({ [sortBy]: sortOrder }).skip(skip).limit(limit).lean(),
+      Job.countDocuments(filter),
+    ]);
 
     const jobsWithCounts = await Promise.all(
       jobs.map(async (job) => {
@@ -115,7 +138,14 @@ const getAllJobsAdmin = async (req, res) => {
       })
     );
 
-    return res.status(200).json({ success: true, jobs: jobsWithCounts });
+    return res.status(200).json({
+      success: true,
+      jobs: jobsWithCounts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     logger.error("Get all jobs (admin) error", { error });
     return res.status(500).json({ message: "Server Error" });
@@ -191,16 +221,10 @@ const updateJob = async (req, res) => {
       // Description changed but no explicit summary was sent — re-derive it.
       job.jobSummary = deriveJobSummary(jobDescription);
     }
-    if (jobDescription !== undefined) {
-      job.jobDescription = jobDescription;
-      // These fields are retired — the admin form now writes everything
-      // (including Responsibilities/Requirements/Benefits) into the single
-      // Job Description box. Clear any leftovers from before that change so
-      // old postings don't show duplicate sections on the public page.
-      job.responsibilities = "";
-      job.requirements = "";
-      job.benefits = "";
-    }
+    if (jobDescription !== undefined) job.jobDescription = jobDescription;
+    if (responsibilities !== undefined) job.responsibilities = responsibilities;
+    if (requirements !== undefined) job.requirements = requirements;
+    if (benefits !== undefined) job.benefits = benefits;
     if (status !== undefined) job.status = status;
 
     await job.save({ validateModifiedOnly: true });

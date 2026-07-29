@@ -8,11 +8,6 @@ const jobSchema = new mongoose.Schema(
       required: true
     },
 
-    // Location, employment type, workplace type, job level, and minimum
-    // qualification are no longer entered separately — the admin form now
-    // writes everything into the single jobDescription rich-text box. These
-    // stay optional (not removed) so older postings that still have this
-    // data keep working on the career page filters and Role Details sidebar.
     location: {
       type: String
     },
