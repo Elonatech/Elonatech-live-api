@@ -130,7 +130,7 @@ const refreshAccessToken = async (req, res) => {
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: refreshExpiryMs,
     });
 
@@ -150,7 +150,7 @@ const logout = async (req, res) => {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
     // Log the logout — req.user is set by verifyToken if the route uses it, otherwise skip
     if (req.user) {
@@ -307,7 +307,7 @@ const issueTokens = async (admin, res, rememberMe = false) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only sent over HTTPS in production
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // lax in dev so cookies work across ports (3000 → 8000)
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // lax in dev so cookies work across ports (3000 → 8000)
     maxAge: refreshExpiryMs,
   });
 
