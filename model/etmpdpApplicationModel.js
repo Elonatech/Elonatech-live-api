@@ -6,9 +6,11 @@ const mongoose = require("mongoose");
 // other.
 const etmpdpApplicationSchema = new mongoose.Schema(
   {
+    // "Regular" is retained for historical records; the Core form now
+    // submits "Core".
     program: {
       type: String,
-      enum: ["Regular", "Ignite"],
+      enum: ["Regular", "Core", "Ignite"],
       required: true,
     },
 
@@ -19,6 +21,10 @@ const etmpdpApplicationSchema = new mongoose.Schema(
     location: { type: String, required: true },
     qualification: { type: String },
     statement: { type: String },
+
+    // Interest in the optional Residential Experience (both forms).
+    // "" when the applicant left it unanswered.
+    residentialInterest: { type: String, default: "" },
 
     // Regular-only
     areaOfInterest: { type: String },

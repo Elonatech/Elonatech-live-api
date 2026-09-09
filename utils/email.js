@@ -180,6 +180,87 @@ const buildEtmpdpConfirmationEmail = ({ fullName, programLabel }) => `<!DOCTYPE 
   </body>
   </html>`;
 
+/* ── Residential Experience interest acknowledgement ──────────────────────
+   Sent to an ETMPDP applicant (Core or Ignite) ONLY when they ticked
+   "Yes — I'm interested in the Residential Experience" on the form.
+   PLACEHOLDER COPY — replace the body text once the Residential Experience
+   details are finalised. */
+const buildResidentialInterestEmail = ({ fullName, program }) => `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet" type="text/css">
+  </head>
+  <body style="background-color:#e8ecf0; margin:0; padding:0;">
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#e8ecf0;">
+      <tbody><tr><td style="padding:24px 0;">
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="width:620px; max-width:100%; margin:0 auto; border-radius:8px 8px 0 0; overflow:hidden; background-color:#1a3a6b;">
+          <tbody><tr>
+            <td style="padding:28px 40px; text-align:center;">
+              <img src="https://elonatech.com.ng/static/media/elonatech.c6083e7d06b4cbab7d90.png"
+                width="180" height="auto" alt="Elonatech" style="display:block; margin:0 auto 16px; height:auto; border:0;">
+              <h1 style="margin:0; color:#ffffff; font-family:Oswald, sans-serif; font-size:26px; font-weight:700; line-height:1.2;">
+                Residential Experience
+              </h1>
+            </td>
+          </tr></tbody>
+        </table>
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="width:620px; max-width:100%; margin:0 auto; background-color:#ffffff;">
+          <tbody><tr><td style="padding:32px 40px;">
+            <p style="margin:0 0 16px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:15px; color:#222222;">Hi ${fullName},</p>
+            <p style="margin:0 0 16px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333; line-height:1.7;">
+              Thank you &mdash; we&rsquo;ve noted your interest in the optional <strong>Residential Experience</strong> for ${program}.
+            </p>
+            <p style="margin:0 0 16px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333; line-height:1.7;">
+              The Residential Experience is a separate, optional arrangement for participants attending onsite. We&rsquo;ll be in touch with the full details &mdash; availability, terms and pricing &mdash; and will confirm the next steps with you directly.
+            </p>
+            <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333;">
+              &mdash; The Elonatech Training Team
+            </p>
+          </td></tr></tbody>
+        </table>
+        <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+          style="width:620px; max-width:100%; margin:0 auto; background-color:#11253d; border-radius:0 0 8px 8px; overflow:hidden;">
+          <tbody><tr>
+            <td style="padding:24px 40px; text-align:center;">
+              <p style="margin:0 0 4px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:12px; font-weight:700; color:#ffffff;">
+                Elonatech Nigeria Limited &copy; ${new Date().getFullYear()} &mdash; All rights reserved
+              </p>
+              <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:11px; color:#7a9cc4;">
+                You can view our <a href="http://www.elonatech.com.ng/policy" target="_blank" rel="noopener" style="color:#56B500; text-decoration:underline;">Privacy Policy</a>.
+              </p>
+            </td>
+          </tr></tbody>
+        </table>
+      </td></tr></tbody>
+    </table>
+  </body>
+  </html>`;
+
+/* Fire the residential-interest acknowledgement. Never throws — a failure
+   here must not affect the application submission or its main notification. */
+const sendResidentialInterestEmail = async ({ toEmail, fullName, program }) => {
+  try {
+    if (!toEmail) return;
+    await transporter.sendMail({
+      from: EMAIL_FROM,
+      to: toEmail,
+      subject: `ETMPDP Residential Experience — we've noted your interest`,
+      html: buildResidentialInterestEmail({ fullName, program }),
+    });
+    console.log("Residential-interest email sent to", toEmail);
+  } catch (error) {
+    console.error("Residential-interest email failed:", error);
+  }
+};
+
+/* True when a form's residentialInterest value means "yes, interested". */
+const wantsResidential = (value) =>
+  typeof value === "string" && value.trim().toLowerCase().startsWith("yes");
+
 const jobEmail = async (req, res) => {
 
   try {
@@ -1791,8 +1872,9 @@ const sessionEmail = async (req, res) => {
 
 const emptdpEmail = async (req, res) => {
 
-  const { fullName, email, location, areaOfInterest, statement, phone, qualification } = req.body
+  const { fullName, email, location, areaOfInterest, statement, phone, qualification, residentialInterest } = req.body
   console.log('Received body: ', req.body)
+  const residentialDisplay = (residentialInterest && residentialInterest.trim()) || "Not specified"
 
   if (!fullName) {
     return res.status(400).send("Full name is required")
@@ -1833,8 +1915,9 @@ const emptdpEmail = async (req, res) => {
   try {
     const cv_url = await uploadBufferToCloudinary(file.buffer);
     application = await EtmpdpApplication.create({
-      program: "Regular",
+      program: "Core",
       fullName, email, phone, location, qualification, statement, areaOfInterest,
+      residentialInterest: (residentialInterest || "").trim(),
       cv_url,
     });
   } catch (error) {
@@ -1969,9 +2052,20 @@ const emptdpEmail = async (req, res) => {
                         </td>
                       </tr></tbody>
                     </table>
-  
+
+                    <!-- Row: Residential Experience -->
+                    <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                      style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
+                      <tbody><tr>
+                        <td style="padding: 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                          <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#1a3a6b; text-transform:uppercase; letter-spacing:1px;">Residential Experience</p>
+                          <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${residentialDisplay}</p>
+                        </td>
+                      </tr></tbody>
+                    </table>
+
                   </td></tr>
-  
+
                   <!-- Personal Statement -->
                   <tr><td style="padding: 24px 40px 32px;">
                     <p style="margin:0 0 10px; font-family: Oswald, sans-serif; font-size:13px; font-weight:600; color:#1a3a6b; text-transform:uppercase; letter-spacing:1.5px; border-bottom: 2px solid #1a3a6b; padding-bottom:8px;">
@@ -2051,6 +2145,11 @@ const emptdpEmail = async (req, res) => {
     //   console.error("ETMPDP (Regular) applicant confirmation email error:", error);
     // }
 
+    // Residential Experience — acknowledge interest only when the applicant opted in.
+    if (wantsResidential(residentialInterest)) {
+      await sendResidentialInterestEmail({ toEmail: email, fullName, program: "ETMPDP Core" });
+    }
+
     return res.json({ status: "success", message: "Application submitted successfully" });
   } catch (error) {
     console.error("Email sending error:", error);
@@ -2065,8 +2164,9 @@ const emptdpEmail = async (req, res) => {
 const igniteEmail = async (req, res) => {
 
   try {
-    const { fullName, email, location, specialization, programTrack, statement, phone, qualification } = req.body
+    const { fullName, email, location, specialization, programTrack, statement, phone, qualification, residentialInterest } = req.body
     console.log('Received body: ', req.body)
+    const residentialDisplay = (residentialInterest && residentialInterest.trim()) || "Not specified"
 
     if (!fullName) {
       return res.status(400).send("Full name is required")
@@ -2116,6 +2216,7 @@ const igniteEmail = async (req, res) => {
       application = await EtmpdpApplication.create({
         program: "Ignite",
         fullName, email, phone, location, qualification, statement, specialization, programTrack,
+        residentialInterest: (residentialInterest || "").trim(),
         cv_url, siwesLetter_url,
       });
     } catch (error) {
@@ -2248,13 +2349,17 @@ const igniteEmail = async (req, res) => {
                     </tr></tbody>
                   </table>
 
-                  <!-- Row: Qualification -->
+                  <!-- Row: Academic Status + Residential Experience -->
                   <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation"
                     style="mso-table-lspace:0pt; mso-table-rspace:0pt; margin-bottom:4px;">
                     <tbody><tr>
-                      <td width="100%" style="padding: 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                      <td width="50%" style="padding: 12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
                         <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Current Academic Status</p>
                         <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${qualification}</p>
+                      </td>
+                      <td width="50%" style="padding: 12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Residential Experience</p>
+                        <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${residentialDisplay}</p>
                       </td>
                     </tr></tbody>
                   </table>
@@ -2333,6 +2438,11 @@ const igniteEmail = async (req, res) => {
     // } catch (error) {
     //   console.error("Ignite applicant confirmation email error:", error);
     // }
+
+    // Residential Experience — acknowledge interest only when the applicant opted in.
+    if (wantsResidential(residentialInterest)) {
+      await sendResidentialInterestEmail({ toEmail: email, fullName, program: "ETMPDP Ignite" });
+    }
 
     res.json({
       status: "success",

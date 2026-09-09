@@ -195,7 +195,7 @@ const { verifyToken, verifySuperAdmin } = require("../middleware/Admin");
 const validate = require("../middleware/validate");
 const { loginSchema, createAdminSchema } = require("../validators/adminValidators");
 
-// Limits login attempts to 10 per 15 minutes per IP
+// Limits login attempts to 15 per 15 minutes per IP
 // Protects against brute force password attacks
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

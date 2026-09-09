@@ -38,7 +38,7 @@ const AuditLogSchema = new mongoose.Schema({
   details: { type: String, default: "" }
 }, { timestamps: true });
 
-// Auto-delete logs older than 90 days
+// Auto-delete logs older than 7 days
 AuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
 
 const AuditLog = mongoose.model("AuditLog", AuditLogSchema);
