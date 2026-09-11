@@ -114,7 +114,7 @@ const uploadBufferToCloudinary = (buffer, folder = "etmpdp") =>
 
 // Builds the applicant-facing confirmation email for ETMPDP training
 // applications (Regular and Ignite). This is separate from the internal
-// notification sent to training@elonatech.com.ng — that one alerts the team,
+// notification sent to etmpdp.mentorship@elonatech.com.ng — that one alerts the team,
 // this one lets the applicant know their submission was received.
 const buildEtmpdpConfirmationEmail = ({ fullName, programLabel }) => `<!DOCTYPE html>
   <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -1929,7 +1929,7 @@ const emptdpEmail = async (req, res) => {
     const mailOptions = {
       from: EMAIL_FROM,
       // replyTo: 'noreply@elonatech.com.ng',
-      to: "training@elonatech.com.ng",
+      to: "etmpdp.mentorship@elonatech.com.ng",
       // bcc: ["recruitment@elonatech.com.ng"],
       subject: `New ETMPDP Core Application — ${fullName}`,
       html: `<!DOCTYPE html>
@@ -2226,7 +2226,7 @@ const igniteEmail = async (req, res) => {
 
     const mailOptions = {
       from: EMAIL_FROM,
-      to: "training@elonatech.com.ng",
+      to: "etmpdp.mentorship@elonatech.com.ng",
       subject: `New ETMPDP Ignite Application — ${fullName}`,
       html: `<!DOCTYPE html>
         <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
@@ -2533,7 +2533,7 @@ const residentialEmail = async (req, res) => {
   try {
     await transporter.sendMail({
       from: EMAIL_FROM,
-      to: "training@elonatech.com.ng",
+      to: "etmpdp.mentorship@elonatech.com.ng",
       subject: `Residential Accommodation Request — ${fullName}`,
       html: `<!DOCTYPE html>
         <html lang="en">
