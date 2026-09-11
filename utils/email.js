@@ -2497,6 +2497,16 @@ const residentialEmail = async (req, res) => {
   }
 
   const choiceLabel = (programChoiceLabel && programChoiceLabel.trim()) || "Program Selection";
+
+  // startPeriod now comes from a native <input type="date"> (YYYY-MM-DD) —
+  // render it as a friendly date rather than the raw ISO string.
+  const startPeriodDisplay = (() => {
+    if (!startPeriod) return "Not specified";
+    const d = new Date(`${startPeriod}T00:00:00`);
+    return Number.isNaN(d.getTime())
+      ? startPeriod
+      : d.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
+  })();
   const addInfo = (additionalInfo && additionalInfo.trim()) || "None provided";
 
   // Fee is looked up server-side (not trusted from the client) and rendered
@@ -2633,7 +2643,7 @@ const residentialEmail = async (req, res) => {
                       </td>
                       <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
                         <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Preferred Start</p>
-                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${startPeriod || "Not specified"}</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${startPeriodDisplay}</p>
                       </td>
                     </tr></tbody>
                   </table>
