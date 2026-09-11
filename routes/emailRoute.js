@@ -165,6 +165,8 @@ router.post(
   ]),
   email.igniteEmail
 );
+// Residential Accommodation request — text-only multipart form (no uploads).
+router.post("/residential", upload.none(), email.residentialEmail);
 
 module.exports = router;
  

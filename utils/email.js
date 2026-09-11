@@ -1931,11 +1931,11 @@ const emptdpEmail = async (req, res) => {
       // replyTo: 'noreply@elonatech.com.ng',
       to: "training@elonatech.com.ng",
       // bcc: ["recruitment@elonatech.com.ng"],
-      subject: `New Training Application — ${fullName}`,
+      subject: `New ETMPDP Core Application — ${fullName}`,
       html: `<!DOCTYPE html>
           <html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
           <head>
-            <title>Training Application</title>
+            <title>New ETMPDP Core Application</title>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml><![endif]-->
@@ -2459,4 +2459,237 @@ const igniteEmail = async (req, res) => {
 }
 
 
-module.exports = { jobEmail, quoteEmail, consultEmail, contactEmail, checkoutEmail, retainerEmail, sessionEmail, reasonContactEmail, emptdpEmail, igniteEmail }
+/* =============================================================================
+   ETMPDP Residential Accommodation request — notification only.
+   Sent from the Residential Experience page's on-page request form. No file
+   uploads, no DB record, no applicant confirmation email (matches ETMPDP).
+   ============================================================================= */
+const residentialEmail = async (req, res) => {
+  const {
+    fullName,
+    email,
+    phone,
+    pathway,
+    programChoice,
+    programChoiceLabel,
+    paymentPreference,
+    deliveryMode,
+    startPeriod,
+    requiresAccommodation,
+    additionalInfo,
+    acknowledged,
+  } = req.body;
+
+  if (!fullName || !fullName.trim()) {
+    return res.status(400).json({ status: "error", message: "Full name is required" });
+  }
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ status: "error", message: "A valid email address is required" });
+  }
+  if (!phone || !phone.trim()) {
+    return res.status(400).json({ status: "error", message: "Phone number is required" });
+  }
+  if (!pathway || !pathway.trim()) {
+    return res.status(400).json({ status: "error", message: "ETMPDP pathway is required" });
+  }
+  if (!programChoice || !programChoice.trim()) {
+    return res.status(400).json({ status: "error", message: `${programChoiceLabel || "Program selection"} is required` });
+  }
+
+  const choiceLabel = (programChoiceLabel && programChoiceLabel.trim()) || "Program Selection";
+  const addInfo = (additionalInfo && additionalInfo.trim()) || "None provided";
+
+  // Fee is looked up server-side (not trusted from the client) and rendered
+  // with the HTML numeric entity for ₦ — a literal ₦ character sent through
+  // multipart form fields has shown up as "?" in some environments, so the
+  // entity sidesteps any transport/encoding risk entirely.
+  const NAIRA = "&#8358;";
+  const nairaHtml = (n) => `${NAIRA}${Number(n).toLocaleString("en-NG")}`;
+  const RESIDENTIAL_FEES = {
+    "ETMPDP Core": { total: 1000000, first: 600000, second: 400000 },
+    "Ignite Foundation (3 Months)": { total: 350000, first: 210000, second: 140000 },
+    "Ignite Professional (4 Months)": { total: 450000, first: 270000, second: 180000 },
+    "Ignite Executive (6 Months)": { total: 600000, first: 360000, second: 240000 },
+  };
+  const feeInfo =
+    pathway === "ETMPDP Core"
+      ? RESIDENTIAL_FEES["ETMPDP Core"]
+      : RESIDENTIAL_FEES[programChoice];
+  const feeTotal = feeInfo ? nairaHtml(feeInfo.total) : "To be confirmed";
+  const feePlan = feeInfo
+    ? `${nairaHtml(feeInfo.first)} first + ${nairaHtml(feeInfo.second)} second`
+    : "To be confirmed";
+
+  try {
+    await transporter.sendMail({
+      from: EMAIL_FROM,
+      to: "training@elonatech.com.ng",
+      subject: `Residential Accommodation Request — ${fullName}`,
+      html: `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Oxygen:wght@300;400;700&display=swap" rel="stylesheet" type="text/css">
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 0; }
+            @media (max-width: 640px) {
+              .field-row td { display: block !important; width: 100% !important; }
+            }
+          </style>
+        </head>
+        <body style="background-color:#e8ecf0; margin:0; padding:0;">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#e8ecf0;">
+            <tbody><tr><td style="padding:24px 0;">
+
+              <!-- HEADER -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="width:620px; max-width:100%; margin:0 auto; border-radius:8px 8px 0 0; overflow:hidden; background-color:#11253d;">
+                <tbody><tr>
+                  <td style="padding:28px 40px; text-align:center;">
+                    <img src="https://elonatech.com.ng/static/media/elonatech.c6083e7d06b4cbab7d90.png"
+                      width="180" height="auto" alt="Elonatech" style="display:block; margin:0 auto 16px; height:auto; border:0;">
+                    <div style="display:inline-block; background-color:#dc3545; border-radius:4px; padding:4px 14px; margin-bottom:12px;">
+                      <span style="font-family:Oxygen, Trebuchet MS, sans-serif; font-size:11px; font-weight:700; color:#ffffff; text-transform:uppercase; letter-spacing:1.5px;">Residential Experience</span>
+                    </div>
+                    <h1 style="margin:0; color:#ffffff; font-family:Oswald, sans-serif; font-size:28px; font-weight:700; line-height:1.2;">
+                      Residential Accommodation Request
+                    </h1>
+                    <p style="margin:8px 0 0; color:#a8c4e8; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:13px;">
+                      Submitted on ${new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+              <!-- APPLICANT SUMMARY BAND -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="width:620px; max-width:100%; margin:0 auto; background-color:#dc3545;">
+                <tbody><tr>
+                  <td style="padding:14px 40px; text-align:center;">
+                    <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:15px; font-weight:700; color:#ffffff;">
+                      ${fullName}
+                      <span style="font-weight:400; margin-left:8px;">&#8212; ${pathway}</span>
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+              <!-- BODY CARD -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="width:620px; max-width:100%; margin:0 auto; background-color:#ffffff;">
+                <tbody>
+                <tr><td style="padding:32px 40px 0;">
+                  <p style="margin:0 0 20px; font-family:Oswald, sans-serif; font-size:13px; font-weight:600; color:#11253d; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #11253d; padding-bottom:8px;">
+                    Request Details
+                  </p>
+
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding:12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Email Address</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;"><a href="mailto:${email}" style="color:#11253d; text-decoration:none;">${email}</a></p>
+                      </td>
+                      <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Phone Number</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${phone}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding:12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">ETMPDP Pathway</p>
+                        <p style="margin:0;"><span style="display:inline-block; background-color:#e8f0fc; color:#34548c; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:13px; font-weight:600; padding:4px 10px; border-radius:20px;">${pathway}</span></p>
+                      </td>
+                      <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">${choiceLabel}</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${programChoice}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding:12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Applicable Residential Fee</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; font-weight:700; color:#34548c;">${feeTotal}</p>
+                        <p style="margin:2px 0 0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:12px; color:#6c757d;">${feePlan}</p>
+                      </td>
+                      <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Payment Preference</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${paymentPreference || "Not specified"}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding:12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Delivery Mode</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${deliveryMode || "Not specified"}</p>
+                      </td>
+                      <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Preferred Start</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${startPeriod || "Not specified"}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+
+                  <table class="field-row" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:4px;">
+                    <tbody><tr>
+                      <td width="50%" style="padding:12px 12px 12px 0; vertical-align:top; border-bottom:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Requires Accommodation</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${requiresAccommodation || "No"}</p>
+                      </td>
+                      <td width="50%" style="padding:12px 0 12px 12px; vertical-align:top; border-bottom:1px solid #eeeeee; border-left:1px solid #eeeeee;">
+                        <p style="margin:0 0 3px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:10px; font-weight:700; color:#11253d; text-transform:uppercase; letter-spacing:1px;">Acknowledgement Accepted</p>
+                        <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#222222;">${acknowledged || "No"}</p>
+                      </td>
+                    </tr></tbody>
+                  </table>
+                </td></tr>
+
+                <tr><td style="padding:20px 40px 32px;">
+                  <p style="margin:0 0 10px; font-family:Oswald, sans-serif; font-size:13px; font-weight:600; color:#11253d; text-transform:uppercase; letter-spacing:1.5px; border-bottom:2px solid #11253d; padding-bottom:8px;">
+                    Additional Information
+                  </p>
+                  <div style="background-color:#f7f9fc; border-left:4px solid #11253d; border-radius:0 6px 6px 0; padding:18px 20px;">
+                    <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333; line-height:1.8;">${addInfo}</p>
+                  </div>
+                </td></tr>
+                </tbody>
+              </table>
+
+              <!-- FOOTER -->
+              <table align="center" width="620" border="0" cellpadding="0" cellspacing="0" role="presentation"
+                style="width:620px; max-width:100%; margin:0 auto; background-color:#11253d; border-radius:0 0 8px 8px; overflow:hidden;">
+                <tbody><tr>
+                  <td style="padding:24px 40px; text-align:center;">
+                    <p style="margin:0 0 4px; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:12px; font-weight:700; color:#ffffff;">
+                      Elonatech Nigeria Limited &copy; ${new Date().getFullYear()} &mdash; All rights reserved
+                    </p>
+                    <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:11px; color:#7a9cc4;">
+                      This notification was generated by the Elonatech ETMPDP Residential Experience request form.
+                    </p>
+                  </td>
+                </tr></tbody>
+              </table>
+
+            </td></tr></tbody>
+          </table>
+        </body>
+        </html>`,
+    });
+
+    return res.json({ status: "success", message: "Residential request submitted successfully" });
+  } catch (error) {
+    console.error("Residential request error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to send residential request" });
+  }
+};
+
+
+module.exports = { jobEmail, quoteEmail, consultEmail, contactEmail, checkoutEmail, retainerEmail, sessionEmail, reasonContactEmail, emptdpEmail, igniteEmail, residentialEmail }
