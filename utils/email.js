@@ -158,7 +158,7 @@ const buildEtmpdpConfirmationEmail = ({ fullName, programLabel }) => `<!DOCTYPE 
               Thank you for applying to the <strong>${programLabel}</strong>. We've received your application and our team will review it shortly. If you're shortlisted, we'll reach out using the contact details you provided.
             </p>
             <p style="margin:0; font-family: Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333;">
-              &mdash; The Elonatech Training Team
+              &mdash; The Elonatech Mentorship Team
             </p>
           </td></tr></tbody>
         </table>
@@ -218,7 +218,7 @@ const buildResidentialInterestEmail = ({ fullName, program }) => `<!DOCTYPE html
               The Residential Experience is a separate, optional arrangement for participants attending onsite. We&rsquo;ll be in touch with the full details &mdash; availability, terms and pricing &mdash; and will confirm the next steps with you directly.
             </p>
             <p style="margin:0; font-family:Oxygen, Trebuchet MS, sans-serif; font-size:14px; color:#333333;">
-              &mdash; The Elonatech Training Team
+              &mdash; The Elonatech Mentorship Team
             </p>
           </td></tr></tbody>
         </table>
