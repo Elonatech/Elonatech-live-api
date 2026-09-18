@@ -19,6 +19,21 @@ const verifyToken = (req, res, next) => {
 };
 
 
+const verifyTokenOptional = (req, res, next) => {
+  const token = req.body.token || req.headers["x-access-token"];
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+  try {
+    req.user = jwt.verify(token, config.token_key);
+  } catch (err) {
+    req.user = null;
+  }
+  return next();
+};
+
 const verifySuperAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
     if (req.user?.role != "superAdmin") {
@@ -28,4 +43,4 @@ const verifySuperAdmin = (req, res, next) => {
   });
 };
 
-module.exports = { verifyToken, verifySuperAdmin };
+module.exports = { verifyToken, verifyTokenOptional, verifySuperAdmin };

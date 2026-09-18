@@ -172,13 +172,23 @@ const { createBlogSchema, updateBlogSchema } = require("../validators/blogValida
 const { cache, clearCache } = require("../middleware/cache");
 
 
-// Cache blog lists for 5 minutes
+// Admin routes — unfiltered (every status/category), never cached.
+// Registered before the public "/:id" route so "/admin/..." isn't swallowed by it.
+router.get("/admin/all", verifyToken, blogController.getBlogsAdmin);
+router.post("/admin/clear-cache", verifyToken, blogController.clearBlogCaches);
+router.get("/admin/:id", verifyToken, blogController.getBlogByIdAdmin);
 
-router.get("/trends", cache(300), blogController.getTrends);
-router.get("/news", cache(300), blogController.getNews);
-router.get("/info", cache(300), blogController.getInfo);
-router.get("/editorial", cache(300), blogController.getEditorial);
-router.get("/", cache(300), blogController.getBlogs);
+// List endpoints cache for 1 minute — short enough that a newly-scheduled
+// post shows up promptly once its publishAt time passes, long enough to
+// still absorb repeat traffic. Single-post detail pages change far less
+// often, so those stay at the longer 5-minute cache below.
+router.get("/trends", cache(60), blogController.getTrends);
+router.get("/news", cache(60), blogController.getNews);
+router.get("/info", cache(60), blogController.getInfo);
+router.get("/editorial", cache(60), blogController.getEditorial);
+router.get("/", cache(60), blogController.getBlogs);
+
+// Individual post caches — 5 minutes
 router.get("/:id", cache(300), blogController.getBlogId);
 router.get("/news/:id", cache(300), blogController.getNewsById);
 router.get("/trends/:id", cache(300), blogController.getTrendsById);

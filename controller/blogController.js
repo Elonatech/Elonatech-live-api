@@ -17,12 +17,29 @@ const makeExcerpt = (html, maxLength = 150) => {
   return plainText.slice(0, maxLength).replace(/\s+\S*$/, "") + "…";
 };
 
+// Query filter for what public-facing endpoints should return —
+// hides drafts and future-scheduled posts.
+const visibleToPublic = () => ({
+  status: { $in: ["scheduled", "published"] },
+  publishAt: { $lte: new Date() },
+});
+
+// Flips any due "scheduled" post over to "published" in the DB.
+// Public visibility is already correct without this (visibleToPublic() checks
+// publishAt directly), but the stored status field otherwise only updates the
+// next time that document happens to be saved — so an admin could see a post
+// stuck reading "scheduled" long after it actually went live. Called from the
+// admin routes (self-healing on read) so no separate cron/scheduler is needed.
+const settleDuePosts = () =>
+  Blog.updateMany(
+    { status: "scheduled", publishAt: { $lte: new Date() } },
+    { $set: { status: "published" } }
+  );
 
 const createBlog = async (req, res) => {
   try {
-    let { title, description, author, category } = req.body;
+    let { title, description, author, category, publishAt } = req.body;
 
-    // Parse category if it's JSON stringified (since you're using form-data)
     if (typeof category === "string") {
       try {
         category = JSON.parse(category);
@@ -35,7 +52,6 @@ const createBlog = async (req, res) => {
       return res.status(400).json({ message: "Image file is required" });
     }
 
-    // Upload to Cloudinary
     const uploadToCloudinary = (fileBuffer) => {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -51,20 +67,35 @@ const createBlog = async (req, res) => {
 
     const result = await uploadToCloudinary(req.file.buffer);
 
-    // ✅ Save only the image URL to DB
+    const scheduledDate = publishAt ? new Date(publishAt) : new Date();
+    const status = scheduledDate > new Date() ? "scheduled" : "published";
+
     const newBlog = await Blog.create({
       title,
       description,
       author,
       category,
       cloudinary_id: result.secure_url,
+      publishAt: scheduledDate,
+      status,
     });
-    await logAudit({ action: "CREATE_BLOG", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Created blog: "${title}"` });
-    logger.info("Blog created", { blogId: newBlog._id, title: newBlog.title });
 
-    await clearCache("/api/v1/blog");
+    await logAudit({
+      action: status === "scheduled" ? "SCHEDULE_BLOG" : "CREATE_BLOG",
+      performedBy: { id: req.user.id, name: req.user.name, email: req.user.email },
+      details:
+        status === "scheduled"
+          ? `Scheduled blog: "${title}" for ${scheduledDate.toISOString()}`
+          : `Created blog: "${title}"`,
+    });
+    logger.info("Blog created", { blogId: newBlog._id, title: newBlog.title, status });
+
+    if (status === "published") {
+      await clearCache("/api/v1/blog");
+    }
+
     return res.status(201).json({
-      message: "Blog Created Successfully",
+      message: status === "scheduled" ? "Blog Scheduled Successfully" : "Blog Created Successfully",
       data: newBlog,
     });
   } catch (error) {
@@ -76,10 +107,72 @@ const createBlog = async (req, res) => {
   }
 };
 
+// Get All Blogs (admin) — every status, every category, no cache.
+// Deliberately a separate route from the public GET / so the public cache
+// (keyed only by URL) can never end up serving an admin's unfiltered
+// response to a public visitor.
+const getBlogsAdmin = async (req, res) => {
+  try {
+    await settleDuePosts();
+    const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
+    return res.status(200).json({ success: true, count: blogs.length, blogs });
+  } catch (error) {
+    logger.error("Get blogs (admin) error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// Get one blog by id/slug (admin) — unfiltered, for populating the edit form
+// regardless of status. Not cached, same reasoning as getBlogsAdmin above.
+const getBlogByIdAdmin = async (req, res) => {
+  try {
+    await settleDuePosts();
+    const identifier = req.params.id;
+    const blog = mongoose.Types.ObjectId.isValid(identifier)
+      ? await Blog.findById(identifier)
+      : await Blog.findOne({ slug: identifier });
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+    return res.status(200).json({ success: true, data: blog });
+  } catch (error) {
+    logger.error("Get blog by id (admin) error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// The 5 static list-endpoint cache keys. Per-post "/:id" caches aren't
+// included — Upstash's free tier blocks the KEYS command (see middleware/cache.js),
+// so we can't enumerate/wildcard-clear those; they just expire on their own
+// 5-minute TTL. This covers the case that actually matters: a post edited or
+// deleted straight in the database (bypassing the API, so the normal
+// create/update/delete cache-busting never ran) still showing up in a listing.
+const BLOG_LIST_CACHE_KEYS = [
+  "/api/v1/blog",
+  "/api/v1/blog/trends",
+  "/api/v1/blog/news",
+  "/api/v1/blog/info",
+  "/api/v1/blog/editorial",
+];
+
+const clearBlogCaches = async (req, res) => {
+  try {
+    await Promise.all(BLOG_LIST_CACHE_KEYS.map((key) => clearCache(key)));
+    logger.info("Blog list caches cleared manually", {
+      by: { id: req.user.id, name: req.user.name, email: req.user.email },
+    });
+    return res.status(200).json({ success: true, message: "Blog list caches cleared", keys: BLOG_LIST_CACHE_KEYS });
+  } catch (error) {
+    logger.error("Clear blog caches error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 // Get All Blogs
 const getBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
+    const blogs = await Blog.find(visibleToPublic()).sort({ createdAt: -1 }).lean();
     const getAllBlogs = blogs.map(({ description, ...rest }) => ({
       ...rest,
       excerpt: makeExcerpt(description),
@@ -94,7 +187,7 @@ const getBlogs = async (req, res) => {
 // Get blogs by trends
 const getTrends = async (req, res) => {
   try {
-    const getAllTrends = await Blog.find({ category: "trends" }).sort({ createdAt: -1 });
+    const getAllTrends = await Blog.find({ category: "trends", ...visibleToPublic() }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, count: getAllTrends.length, getAllTrends });
   } catch (error) {
     logger.error("Get Trends error", { error });
@@ -105,9 +198,7 @@ const getTrends = async (req, res) => {
 // Get blogs by news
 const getNews = async (req, res) => {
   try {
-    const getAllNews = await Blog.find({ category: "news" }).sort({ createdAt: -1 });
-
-
+    const getAllNews = await Blog.find({ category: "news", ...visibleToPublic() }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, count: getAllNews.length, getAllNews });
   } catch (error) {
     logger.error("Get News error", { error });
@@ -118,7 +209,7 @@ const getNews = async (req, res) => {
 // Get blogs by info
 const getInfo = async (req, res) => {
   try {
-    const getAllInfo = await Blog.find({ category: "info" }).sort({ createdAt: -1 });
+    const getAllInfo = await Blog.find({ category: "info", ...visibleToPublic() }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, count: getAllInfo.length, getAllInfo });
   } catch (error) {
     logger.error("Get Info error", { error });
@@ -129,7 +220,7 @@ const getInfo = async (req, res) => {
 // Get blogs by editorial
 const getEditorial = async (req, res) => {
   try {
-    const getAllEditorial = await Blog.find({ category: "editorial" }).sort({ createdAt: -1 });
+    const getAllEditorial = await Blog.find({ category: "editorial", ...visibleToPublic() }).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, count: getAllEditorial.length, getAllEditorial });
   } catch (error) {
     logger.error("Get Editorial error", { error });
@@ -137,33 +228,16 @@ const getEditorial = async (req, res) => {
   }
 };
 
-//get news by id
-
-// const getNewsById = async (req, res) => {
-//   try {
-//     const { id } = req.params; // Extract ID from request parameters
-//     const news = await Blog.findById(id); // Find news by ID
-
-//     if (!news) {
-//       return res.status(404).send("news not found");
-//     }
-
-//     return res.status(200).json(news);
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).send("Server Error");
-//   }
-// };
-
+// Get news by id — public read, so visibility filter applies to BOTH lookup branches
 const getNewsById = async (req, res) => {
   try {
     const identifier = req.params.id;
     let news;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      news = await Blog.findById(identifier);
+      news = await Blog.findOne({ _id: identifier, ...visibleToPublic() });
     } else {
-      news = await Blog.findOne({ slug: identifier });
+      news = await Blog.findOne({ slug: identifier, ...visibleToPublic() });
     }
 
     if (!news) {
@@ -177,17 +251,15 @@ const getNewsById = async (req, res) => {
   }
 };
 
-// Get Blog By Id
-
 const getTrendsById = async (req, res) => {
   try {
     const identifier = req.params.id;
     let trends;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      trends = await Blog.findById(identifier);
+      trends = await Blog.findOne({ _id: identifier, ...visibleToPublic() });
     } else {
-      trends = await Blog.findOne({ slug: identifier });
+      trends = await Blog.findOne({ slug: identifier, ...visibleToPublic() });
     }
 
     if (!trends) {
@@ -201,16 +273,15 @@ const getTrendsById = async (req, res) => {
   }
 };
 
-
 const getInfoById = async (req, res) => {
   try {
     const identifier = req.params.id;
     let info;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      info = await Blog.findById(identifier);
+      info = await Blog.findOne({ _id: identifier, ...visibleToPublic() });
     } else {
-      info = await Blog.findOne({ slug: identifier });
+      info = await Blog.findOne({ slug: identifier, ...visibleToPublic() });
     }
 
     if (!info) {
@@ -224,16 +295,15 @@ const getInfoById = async (req, res) => {
   }
 };
 
-
 const getEditorialById = async (req, res) => {
   try {
     const identifier = req.params.id;
     let editorial;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      editorial = await Blog.findById(identifier);
+      editorial = await Blog.findOne({ _id: identifier, ...visibleToPublic() });
     } else {
-      editorial = await Blog.findOne({ slug: identifier });
+      editorial = await Blog.findOne({ slug: identifier, ...visibleToPublic() });
     }
 
     if (!editorial) {
@@ -247,16 +317,15 @@ const getEditorialById = async (req, res) => {
   }
 };
 
-
 const getBlogId = async (req, res) => {
   try {
     const identifier = req.params.id;
     let blog;
 
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      blog = await Blog.findById(identifier);
+      blog = await Blog.findOne({ _id: identifier, ...visibleToPublic() });
     } else {
-      blog = await Blog.findOne({ slug: identifier });
+      blog = await Blog.findOne({ slug: identifier, ...visibleToPublic() });
     }
 
     if (!blog) {
@@ -270,6 +339,8 @@ const getBlogId = async (req, res) => {
   }
 };
 
+// Admin edit — deliberately NO visibility filter here.
+// An admin must be able to open a draft or future-scheduled post to edit/reschedule it.
 const updateBlogId = async (req, res) => {
   try {
     logger.info("REQ FILE:", { file: req.file });
@@ -282,7 +353,6 @@ const updateBlogId = async (req, res) => {
     let result;
 
     if (req.file) {
-      // Upload file from buffer using streamifier
       const streamUpload = (req) => {
         return new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream((error, result) => {
@@ -301,26 +371,43 @@ const updateBlogId = async (req, res) => {
       description: req.body.description || blog.description,
       author: req.body.author || blog.author,
       category: req.body.category || blog.category,
-      cloudinary_id: result ? result.secure_url : blog.cloudinary_id, // keep old image if no new file
+      cloudinary_id: result ? result.secure_url : blog.cloudinary_id,
     };
 
+    // Only touch scheduling if the request actually includes it —
+    // otherwise a normal content edit shouldn't accidentally reschedule the post.
+    if (req.body.publishAt) {
+      const newPublishAt = new Date(req.body.publishAt);
+      data.publishAt = newPublishAt;
+      data.status = newPublishAt > new Date() ? "scheduled" : "published";
+    } else if (req.body.status && ["draft", "scheduled", "published"].includes(req.body.status)) {
+      // allow explicit status changes too, e.g. admin manually publishing a draft early
+      data.status = req.body.status;
+      if (req.body.status === "published") {
+        data.publishAt = new Date();
+      }
+    }
+
     const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, data, { new: true });
+
     await clearCache("/api/v1/blog");
     await clearCache(`/api/v1/blog/${req.params.id}`);
-    await logAudit({ action: "UPDATE_BLOG", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Updated blog: "${updatedBlog.title}"` });
+
+    await logAudit({
+      action: data.status && data.status !== blog.status ? "RESCHEDULE_BLOG" : "UPDATE_BLOG",
+      performedBy: { id: req.user.id, name: req.user.name, email: req.user.email },
+      details:
+        data.status && data.status !== blog.status
+          ? `Changed blog "${updatedBlog.title}" status: ${blog.status} → ${data.status}`
+          : `Updated blog: "${updatedBlog.title}"`,
+    });
+
     res.status(200).json({ success: true, data: updatedBlog });
   } catch (error) {
     logger.error("Update blog error", { error });
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
   }
 };
-
-// const deleteBlogId = async (req, res) => {
-//   let blog = await Blog.findById(req.params.id);
-//   await cloudinary.uploader.destroy(blog.cloudinary_id);
-//   await blog.deleteOne();
-//   return res.status(200).send("Blog Successfully Deleted");
-// };
 
 const deleteBlogId = async (req, res) => {
   try {
@@ -346,6 +433,9 @@ const deleteBlogId = async (req, res) => {
 module.exports = {
   createBlog,
   getBlogs,
+  getBlogsAdmin,
+  getBlogByIdAdmin,
+  clearBlogCaches,
   getBlogId,
   updateBlogId,
   deleteBlogId,

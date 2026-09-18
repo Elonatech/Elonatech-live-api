@@ -36,11 +36,28 @@ const blogSchema = new mongoose.Schema(
       required: true
     },
 
+    status: {
+      type: String,
+      enum: ["draft", "scheduled", "published"],
+      default: "published" // keeps existing docs behaving as before
+    },
+
+    publishAt: {
+      type: Date,
+      default: Date.now // when it should go/went live
+    },
+
   },
   { timestamps: true }
 );
 
+blogSchema.index({ status: 1, publishAt: -1 });
+
 blogSchema.pre("save", async function (next) {
+  // auto-flip scheduled -> published on save if the time has already passed
+  if (this.status === "scheduled" && this.publishAt <= new Date()) {
+    this.status = "published";
+  }
   if (!this.isModified("title")) return next();
   const base = slugify(this.title, { lower: true, strict: true });
   let slug = base;

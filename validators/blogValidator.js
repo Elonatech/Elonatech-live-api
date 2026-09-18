@@ -19,6 +19,19 @@ const parseCategory = (val) => {
   return val;
 };
 
+// publishAt arrives as an ISO/date-parsable string from form-data (like everything else here).
+// Empty string means "not provided" — treat same as undefined so Date.now() default applies.
+const parsePublishAt = (val) => (val === "" || val == null ? undefined : val);
+
+const publishAtField = z.preprocess(
+  parsePublishAt,
+  z.string().refine((val) => !isNaN(Date.parse(val)), { message: "publishAt must be a valid date" }).optional()
+);
+
+const statusEnum = z.enum(["draft", "scheduled", "published"], {
+  errorMap: () => ({ message: "Status must be draft, scheduled, or published" }),
+});
+
 const createBlogSchema = z.object({
   title: z.string({ required_error: "Title is required" }).trim().min(3, "Title must be at least 3 characters"),
   description: z.string({ required_error: "Description is required" }).trim().min(10, "Description is too short"),
@@ -31,6 +44,8 @@ const createBlogSchema = z.object({
       { errorMap: () => ({ message: "Category must be blog, trends, news, info, or editorial" }) }
     )
   ),
+  // Optional — omit to publish immediately, or pass a future date to schedule it
+  publishAt: publishAtField,
 });
 
 const updateBlogSchema = z.object({
@@ -45,6 +60,8 @@ const updateBlogSchema = z.object({
       { errorMap: () => ({ message: "Category must be blog, trends, news, info, or editorial" }) }
     ).optional()
   ),
+  publishAt: publishAtField,
+  status: z.preprocess((val) => (val === "" || val == null ? undefined : val), statusEnum.optional()),
 });
 
 module.exports = { createBlogSchema, updateBlogSchema };
