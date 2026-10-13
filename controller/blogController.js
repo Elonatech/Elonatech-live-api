@@ -114,7 +114,7 @@ const createBlog = async (req, res) => {
 const getBlogsAdmin = async (req, res) => {
   try {
     await settleDuePosts();
-    const blogs = await Blog.find().sort({ createdAt: -1 }).lean();
+    const blogs = await Blog.find().sort({ publishAt: -1 }).lean();
     return res.status(200).json({ success: true, count: blogs.length, blogs });
   } catch (error) {
     logger.error("Get blogs (admin) error", { error });
@@ -172,7 +172,7 @@ const clearBlogCaches = async (req, res) => {
 // Get All Blogs
 const getBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find(visibleToPublic()).sort({ createdAt: -1 }).lean();
+    const blogs = await Blog.find(visibleToPublic()).sort({ publishAt: -1 }).lean();
     const getAllBlogs = blogs.map(({ description, ...rest }) => ({
       ...rest,
       excerpt: makeExcerpt(description),
@@ -187,7 +187,7 @@ const getBlogs = async (req, res) => {
 // Get blogs by trends
 const getTrends = async (req, res) => {
   try {
-    const getAllTrends = await Blog.find({ category: "trends", ...visibleToPublic() }).sort({ createdAt: -1 });
+    const getAllTrends = await Blog.find({ category: "trends", ...visibleToPublic() }).sort({ publishAt: -1 });
     return res.status(200).json({ success: true, count: getAllTrends.length, getAllTrends });
   } catch (error) {
     logger.error("Get Trends error", { error });
@@ -198,7 +198,7 @@ const getTrends = async (req, res) => {
 // Get blogs by news
 const getNews = async (req, res) => {
   try {
-    const getAllNews = await Blog.find({ category: "news", ...visibleToPublic() }).sort({ createdAt: -1 });
+    const getAllNews = await Blog.find({ category: "news", ...visibleToPublic() }).sort({ publishAt: -1 });
     return res.status(200).json({ success: true, count: getAllNews.length, getAllNews });
   } catch (error) {
     logger.error("Get News error", { error });
@@ -209,7 +209,7 @@ const getNews = async (req, res) => {
 // Get blogs by info
 const getInfo = async (req, res) => {
   try {
-    const getAllInfo = await Blog.find({ category: "info", ...visibleToPublic() }).sort({ createdAt: -1 });
+    const getAllInfo = await Blog.find({ category: "info", ...visibleToPublic() }).sort({ publishAt: -1 });
     return res.status(200).json({ success: true, count: getAllInfo.length, getAllInfo });
   } catch (error) {
     logger.error("Get Info error", { error });
@@ -220,7 +220,7 @@ const getInfo = async (req, res) => {
 // Get blogs by editorial
 const getEditorial = async (req, res) => {
   try {
-    const getAllEditorial = await Blog.find({ category: "editorial", ...visibleToPublic() }).sort({ createdAt: -1 });
+    const getAllEditorial = await Blog.find({ category: "editorial", ...visibleToPublic() }).sort({ publishAt: -1 });
     return res.status(200).json({ success: true, count: getAllEditorial.length, getAllEditorial });
   } catch (error) {
     logger.error("Get Editorial error", { error });
@@ -374,8 +374,6 @@ const updateBlogId = async (req, res) => {
       cloudinary_id: result ? result.secure_url : blog.cloudinary_id,
     };
 
-    // Only touch scheduling if the request actually includes it —
-    // otherwise a normal content edit shouldn't accidentally reschedule the post.
     if (req.body.publishAt) {
       const newPublishAt = new Date(req.body.publishAt);
       data.publishAt = newPublishAt;

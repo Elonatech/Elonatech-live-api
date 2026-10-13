@@ -39,7 +39,7 @@ const blogSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["draft", "scheduled", "published"],
-      default: "published" // keeps existing docs behaving as before
+      default: "published" 
     },
 
     publishAt: {
@@ -54,7 +54,6 @@ const blogSchema = new mongoose.Schema(
 blogSchema.index({ status: 1, publishAt: -1 });
 
 blogSchema.pre("save", async function (next) {
-  // auto-flip scheduled -> published on save if the time has already passed
   if (this.status === "scheduled" && this.publishAt <= new Date()) {
     this.status = "published";
   }
