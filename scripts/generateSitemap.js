@@ -10,6 +10,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const Blog = require("../model/blogModel");
 const Product = require("../model/productModel");
+const { visibleToPublic } = require("../lib/productVisibility");
 
 const SITE = "https://elonatech.com.ng";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -111,8 +112,8 @@ async function generate() {
     console.log("Connected. Fetching blogs...");
 
     const [blogs, products] = await Promise.all([
-      Blog.find({}, "slug _id category updatedAt").lean(),
-      Product.find({}, "slug _id updatedAt").lean(),
+      Blog.find(visibleToPublic(), "slug _id category updatedAt").lean(),
+      Product.find(visibleToPublic(), "slug _id updatedAt").lean(),
     ]);
     console.log(`Found ${blogs.length} blog posts, ${products.length} products.`);
 

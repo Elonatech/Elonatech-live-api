@@ -1,5 +1,20 @@
 const { z } = require("zod");
 
+// publishAt arrives as an ISO/date-parsable string from form-data. An empty
+// string means "not provided" — treated like undefined, so the product simply
+// publishes now. (Same approach as the blog validator.)
+const publishAtField = z.preprocess(
+  (val) => (val === "" || val == null ? undefined : val),
+  z.string().refine((val) => !isNaN(Date.parse(val)), { message: "publishAt must be a valid date" }).optional()
+);
+
+const statusField = z.preprocess(
+  (val) => (val === "" || val == null ? undefined : val),
+  z.enum(["draft", "scheduled", "published"], {
+    errorMap: () => ({ message: "Status must be draft, scheduled, or published" }),
+  }).optional()
+);
+
 // Fields required when creating a product
 // price and quantity come as strings from multipart/form-data so we coerce them to numbers
 const createProductSchema = z.object({
@@ -18,6 +33,9 @@ const createProductSchema = z.object({
   odd: z.string().trim().optional(),
 
   computerProperty: z.string().optional(),
+
+  // Optional — omit to publish immediately, or pass a future date to schedule it
+  publishAt: publishAtField,
 });
 
 const computerPropertyFields = z.object({
@@ -43,6 +61,9 @@ const computerPropertyFields = z.object({
 });
 
 // Update allows all fields to be optional — you might only update price or description
-const updateProductSchema = createProductSchema.partial().merge(computerPropertyFields);
+const updateProductSchema = createProductSchema
+  .partial()
+  .merge(computerPropertyFields)
+  .extend({ status: statusField });
 
 module.exports = { createProductSchema, updateProductSchema };

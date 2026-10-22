@@ -54,9 +54,23 @@ const productSchema = new mongoose.Schema(
         url: { type: String, required: true },
       },
     ],
+
+    // Scheduling. `status` defaults to "published" so existing products keep
+    // behaving as before. `publishAt` deliberately has NO default: Mongoose
+    // would fill it with "now" when reading old products that don't have it,
+    // making every existing product look as if it was published today.
+    // New products always get it set explicitly by the controller.
+    status: {
+      type: String,
+      enum: ["draft", "scheduled", "published"],
+      default: "published",
+    },
+    publishAt: { type: Date },
   },
   { timestamps: true }
 );
+
+productSchema.index({ status: 1, publishAt: -1 });
 
 // ✅ Unique slug generator (needs schema to exist first)
 productSchema.statics.generateUniqueSlug = async function (name, existingId = null) {
@@ -73,6 +87,10 @@ productSchema.statics.generateUniqueSlug = async function (name, existingId = nu
 
 // ✅ Pre-save hook (auto-slug)
 productSchema.pre("save", async function (next) {
+  // auto-flip scheduled -> published on save if the time has already passed
+  if (this.status === "scheduled" && this.publishAt && this.publishAt <= new Date()) {
+    this.status = "published";
+  }
   if (!this.slug || this.isModified("name")) {
     this.slug = await this.constructor.generateUniqueSlug(this.name, this._id);
   }

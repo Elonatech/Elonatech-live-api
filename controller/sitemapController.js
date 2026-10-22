@@ -1,5 +1,6 @@
 const Blog = require("../model/blogModel");
 const Product = require("../model/productModel");
+const { visibleToPublic } = require("../lib/productVisibility");
 
 const SITE = "https://elonatech.com.ng";
 const TODAY = new Date().toISOString().split("T")[0];
@@ -103,8 +104,11 @@ const urlEntry = ({ loc, lastmod, priority, changefreq }) => `
 const getSitemap = async (req, res) => {
   try {
     const [blogs, products] = await Promise.all([
-      Blog.find({}, "slug _id category updatedAt").lean(),
-      Product.find({}, "slug _id updatedAt").lean(),
+      // Scheduled / draft posts and products must not be advertised to search
+      // engines — they 404 until they go live. (Blogs use the same status /
+      // publishAt fields, so the same rule applies.)
+      Blog.find(visibleToPublic(), "slug _id category updatedAt").lean(),
+      Product.find(visibleToPublic(), "slug _id updatedAt").lean(),
     ]);
 
     const staticEntries = staticPages

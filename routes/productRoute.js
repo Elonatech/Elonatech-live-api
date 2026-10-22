@@ -187,14 +187,21 @@ const validate = require("../middleware/validate");
 const { createProductSchema, updateProductSchema } = require("../validators/productValidator");
 const { cache, clearCache } = require("../middleware/cache");
 
-// Cache product list for 5 minutes (300 seconds)
-// After 300s Redis auto-expires the entry and the next request refreshes it
-router.get("/", cache(300), productController.getAllProducts);
-router.get("/computers", cache(300), productController.getComputers);
-router.get("/filter", cache(120), productController.getProductsByFilter);
-router.get("/filter/all", cache(120), productController.getAllProductsByFilterForAllCategories);
-router.get("/brand", cache(300), productController.getUniqueBrandsAndPriceRange);
-router.get("/products/recently-viewed", cache(300), productController.getRecentlyViewedProducts);
+// Admin routes — unfiltered (every status), never cached. Registered before
+// the public "/:id" route so "/admin/..." isn't swallowed by it.
+router.get("/admin/all", verifyToken, productController.getProductsAdmin);
+router.get("/admin/:id", verifyToken, productController.getProductByIdAdmin);
+
+// List endpoints cache for 1 minute — short enough that a scheduled product
+// appears promptly once its publishAt time passes (lists can't be cleared by
+// exact key because the filter/query-string variants each have their own key),
+// long enough to still absorb repeat traffic.
+router.get("/", cache(60), productController.getAllProducts);
+router.get("/computers", cache(60), productController.getComputers);
+router.get("/filter", cache(60), productController.getProductsByFilter);
+router.get("/filter/all", cache(60), productController.getAllProductsByFilterForAllCategories);
+router.get("/brand", cache(60), productController.getUniqueBrandsAndPriceRange);
+router.get("/products/recently-viewed", cache(60), productController.getRecentlyViewedProducts);
 router.get("/:id/next", cache(300), productController.getNextProduct);
 router.get("/:id/related", cache(300), productController.getRelatedProducts);
 router.get("/:id", cache(300), productController.getProductById);

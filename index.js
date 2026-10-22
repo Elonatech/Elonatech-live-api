@@ -7,6 +7,7 @@ const cors = require("cors");
 const compression = require("compression");
 const { connectMongodb } = require("./config/database");
 const Product = require("./model/productModel");
+const { onlyVisible } = require("./lib/productVisibility");
 
 
 const logVisitor = require("./middleware/visitorMiddleware");
@@ -90,7 +91,9 @@ function escapeHtml(str) {
 app.get("/og/:id", async (req, res) => {
   try {
     const productId = req.params.id;
-    const product = await Product.findById(productId).lean();
+    // Social-share preview: scheduled/draft products must not be previewable
+    // before they go live.
+    const product = await Product.findOne(onlyVisible({ _id: productId })).lean();
     if (!product) return res.status(404).send("Product not found");
 
     let imageUrl = product.images?.[0]?.url || "https://res.cloudinary.com/elonatech/image/upload/v1700000000/default.jpg";

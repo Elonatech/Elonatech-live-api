@@ -7,6 +7,17 @@ const { clearCache } = require("../middleware/cache");
 const logger = require("../lib/logger");
 const cloudinary = require("../lib/cloudinary");
 const logAudit = require("../lib/logAudit");
+const { onlyVisible } = require("../lib/productVisibility");
+
+// Flips any due "scheduled" product over to "published" in the DB. Public
+// visibility is already correct without this (onlyVisible() checks publishAt
+// directly); this just keeps the stored status — and the admin list — honest.
+// Called from the admin routes, so no separate cron/scheduler is needed.
+const settleDueProducts = () =>
+  Product.updateMany(
+    { status: "scheduled", publishAt: { $lte: new Date() } },
+    { $set: { status: "published" } }
+  );
 
 const createProduct = async (req, res, next) => {
   try {
@@ -20,6 +31,7 @@ const createProduct = async (req, res, next) => {
       quantity,
       category,
       computerProperty,
+      publishAt,
     } = req.body;
 
     // :white_check_mark: Validate images
@@ -67,6 +79,10 @@ const createProduct = async (req, res, next) => {
         message: "Invalid JSON format in computerProperty",
       });
     }
+    // Omit publishAt to publish now, or pass a future date to schedule it.
+    const scheduledDate = publishAt ? new Date(publishAt) : new Date();
+    const status = scheduledDate > new Date() ? "scheduled" : "published";
+
     // :white_check_mark: Base product data (reusable)
     const baseData = {
       name,
@@ -79,6 +95,8 @@ const createProduct = async (req, res, next) => {
       id: parseInt(Date.now() * Math.random()),
       computerProperty: parsedComputerProperty,
       images: imagesBuffer,
+      publishAt: scheduledDate,
+      status,
     };
     // :white_check_mark: :one: CREATE PRODUCT IN SELECTED CATEGORY
     const mainProduct = await Product.create({
@@ -92,10 +110,17 @@ const createProduct = async (req, res, next) => {
     // });
     await clearCache("/api/v1/product");
     await clearCache("/api/v1/product/filter/all");
-    await logAudit({ action: "CREATE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Created product: "${name}"` });
+    await logAudit({
+      action: status === "scheduled" ? "SCHEDULE_PRODUCT" : "CREATE_PRODUCT",
+      performedBy: { id: req.user.id, name: req.user.name, email: req.user.email },
+      details:
+        status === "scheduled"
+          ? `Scheduled product: "${name}" for ${scheduledDate.toISOString()}`
+          : `Created product: "${name}"`,
+    });
     return res.status(201).json({
       success: true,
-      message: "Product created successfully",
+      message: status === "scheduled" ? "Product scheduled successfully" : "Product created successfully",
       data: mainProduct,
       // generalCategory: generalProduct,
     });
@@ -105,9 +130,42 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+// ── Admin reads ─────────────────────────────────────────────────────────────
+// Every status, no visibility filter, never cached. Deliberately separate
+// routes from the public ones so the public cache (keyed only by URL) can
+// never end up serving an admin's unfiltered response to a visitor.
+const getProductsAdmin = async (req, res) => {
+  try {
+    await settleDueProducts();
+    const products = await Product.find();
+    return res.status(200).json({ success: true, count: products.length, products });
+  } catch (error) {
+    logger.error("Get products (admin) error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
+const getProductByIdAdmin = async (req, res) => {
+  try {
+    await settleDueProducts();
+    const identifier = req.params.id;
+    const product = mongoose.Types.ObjectId.isValid(identifier)
+      ? await Product.findById(identifier)
+      : await Product.findOne({ slug: identifier });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product Not Found" });
+    }
+    return res.status(200).json({ success: true, product });
+  } catch (error) {
+    logger.error("Get product by id (admin) error", { error });
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
+
 const getAllProducts = async (req, res, next) => {
   try {
-    const getAllProducts = await Product.find();
+    const getAllProducts = await Product.find(onlyVisible());
 
     return res.status(200).json({ success: true, count: getAllProducts.length, getAllProducts });
   } catch (error) {
@@ -119,7 +177,7 @@ const getAllProducts = async (req, res, next) => {
 
 const getComputers = async (req, res) => {
   try {
-    const products = await Product.find({ category: "Computer" });
+    const products = await Product.find(onlyVisible({ category: "Computer" }));
     res.status(200).json({
       success: true,
       count: products.length,
@@ -171,7 +229,7 @@ const getProductsByFilter = async (req, res) => {
       };
     }
 
-    const products = await Product.find(filterCriteria);
+    const products = await Product.find(onlyVisible(filterCriteria));
 
     const prices = products
       .map((product) => parseFloat(product.price) || 0)
@@ -227,7 +285,7 @@ const getAllProductsByFilterForAllCategories = async (req, res) => {
       };
     }
 
-    const products = await Product.find(filterCriteria);
+    const products = await Product.find(onlyVisible(filterCriteria));
 
     const prices = products
       .map((product) => parseFloat(product.price) || 0)
@@ -268,7 +326,7 @@ const getAllProductsByFilterForAllCategories = async (req, res) => {
 
 const getUniqueBrandsAndPriceRange = async (req, res) => {
   try {
-    const products = await Product.find({});
+    const products = await Product.find(onlyVisible());
 
     const uniqueBrands = [
       ...new Set(products.map((product) => product.brand.trim().toLowerCase())),
@@ -330,7 +388,9 @@ const updateProduct = async (req, res, next) => {
       graphics,
       voltage,
       battery,
-      wireless
+      wireless,
+      publishAt,
+      status: requestedStatus,
     } = req.body;
 
     const data = {
@@ -364,12 +424,34 @@ const updateProduct = async (req, res, next) => {
         wireless
       }]
     };
+    // Only touch scheduling if the request actually includes it — otherwise a
+    // normal content edit shouldn't accidentally reschedule or hide the product.
+    if (publishAt) {
+      const newPublishAt = new Date(publishAt);
+      data.publishAt = newPublishAt;
+      data.status = newPublishAt > new Date() ? "scheduled" : "published";
+    } else if (requestedStatus && ["draft", "scheduled", "published"].includes(requestedStatus)) {
+      // explicit status change, e.g. an admin publishing a scheduled product early
+      data.status = requestedStatus;
+      if (requestedStatus === "published") {
+        data.publishAt = new Date();
+      }
+    }
+
     const newUpdateProduct = await Product.findByIdAndUpdate(product, data, {
       new: true
     });
     await clearCache("/api/v1/product");
     await clearCache(`/api/v1/product/${req.params.id}`);
-    await logAudit({ action: "UPDATE_PRODUCT", performedBy: { id: req.user.id, name: req.user.name, email: req.user.email }, details: `Updated product: "${newUpdateProduct.name}"` });
+
+    const statusChanged = data.status && data.status !== (product.status || "published");
+    await logAudit({
+      action: statusChanged ? "RESCHEDULE_PRODUCT" : "UPDATE_PRODUCT",
+      performedBy: { id: req.user.id, name: req.user.name, email: req.user.email },
+      details: statusChanged
+        ? `Changed product "${newUpdateProduct.name}" status: ${product.status || "published"} → ${data.status}`
+        : `Updated product: "${newUpdateProduct.name}"`,
+    });
     return res.status(200).json({ newUpdateProduct });
   } catch (error) {
     logger.error("Update product error:", error);
@@ -508,10 +590,12 @@ const getProductById = async (req, res) => {
     const identifier = req.params.id;
     let product;
 
+    // Public read: the visibility rule applies to BOTH lookup branches, so a
+    // scheduled product can't be reached by id or by slug before it goes live.
     if (mongoose.Types.ObjectId.isValid(identifier)) {
-      product = await Product.findById(identifier);
+      product = await Product.findOne(onlyVisible({ _id: identifier }));
     } else {
-      product = await Product.findOne({ slug: identifier });
+      product = await Product.findOne(onlyVisible({ slug: identifier }));
     }
 
     if (!product) {
@@ -538,15 +622,14 @@ const getProductById = async (req, res) => {
 
 const getRelatedProducts = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findOne(onlyVisible({ _id: req.params.id }));
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const relatedProducts = await Product.find({
-      _id: { $ne: product._id },
-      category: product.category
-    }).limit(5);
+    const relatedProducts = await Product.find(
+      onlyVisible({ _id: { $ne: product._id }, category: product.category })
+    ).limit(5);
 
     res.status(200).json({ success: true, relatedProducts });
   } catch (error) {
@@ -558,7 +641,12 @@ const getRelatedProducts = async (req, res) => {
 
 const getRecentlyViewedProducts = async (req, res) => {
   try {
-    const recentlyViewed = await RecentlyViewed.findOne().populate("products");
+    // `match` drops any product that has since been hidden (e.g. rescheduled);
+    // populate leaves those as null, which the filter below removes.
+    const recentlyViewed = await RecentlyViewed.findOne().populate({
+      path: "products",
+      match: onlyVisible(),
+    });
 
     if (!recentlyViewed) {
       return res.status(200).json({ recentlyViewedProducts: [] });
@@ -566,7 +654,7 @@ const getRecentlyViewedProducts = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      recentlyViewedProducts: recentlyViewed.products
+      recentlyViewedProducts: recentlyViewed.products.filter(Boolean)
     });
   } catch (error) {
     logger.error("Get recently viewed products error", { error });
@@ -611,14 +699,14 @@ const updateRecentlyViewed = async (productId) => {
 
 const getNextProduct = async (req, res) => {
   try {
-    const currentProduct = await Product.findById(req.params.id);
+    const currentProduct = await Product.findOne(onlyVisible({ _id: req.params.id }));
     if (!currentProduct) {
       return res.status(404).json({ message: "Current product not found" });
     }
 
     const productCategory = currentProduct.category;
 
-    const allProducts = await Product.find();
+    const allProducts = await Product.find(onlyVisible());
 
     const reversedProducts = allProducts.reverse();
 
@@ -647,6 +735,8 @@ const getNextProduct = async (req, res) => {
 
 module.exports = {
   createProduct,
+  getProductsAdmin,
+  getProductByIdAdmin,
   getAllProducts,
   getProductsByFilter,
   getAllProductsByFilterForAllCategories,
