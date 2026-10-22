@@ -12,6 +12,11 @@ const loginSchema = z.object({
   password: z
     .string({ required_error: "Password is required"})
     .min(1, "Password is required"),
+
+  // Must be declared: validate() replaces req.body with the parsed result and
+  // zod strips unknown keys, so without this the "Remember me" tick never
+  // reached the login handler and every session got the 7-day default.
+  rememberMe: z.boolean().optional(),
 });
 
 // Create admin schema — same as login but role must be one of the two allowed values
