@@ -26,7 +26,11 @@ const AuditLogSchema = new mongoose.Schema({
       "DELETE_PRODUCT",
       "CREATE_JOB",
       "UPDATE_JOB",
-      "DELETE_JOB"
+      "DELETE_JOB",
+      "CREATE_CERTIFICATE",
+      "UPDATE_CERTIFICATE",
+      "REVOKE_CERTIFICATE",
+      "DELETE_CERTIFICATE"
     ]
   },
   performedBy: {
