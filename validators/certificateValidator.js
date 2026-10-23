@@ -81,6 +81,8 @@ const updateCertificateSchema = z
 
 // Who signs: printed under the signature line on every certificate
 const certificateSettingsSchema = z.object({
+  // empty = the default signatory; a programme name sets that programme's own
+  program: z.enum(PROGRAMS, { errorMap: () => ({ message: `Program must be one of: ${PROGRAMS.join(", ")}` }) }).optional(),
   signatoryName: z.string().trim().max(80, "Name must be at most 80 characters"),
   signatoryTitle: z.string().trim().max(80, "Title must be at most 80 characters"),
 });

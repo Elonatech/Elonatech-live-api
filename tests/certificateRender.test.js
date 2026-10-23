@@ -219,6 +219,76 @@ describe("signature and stamp storage", () => {
     process.env.CERT_ASSETS_KEY = good;
   });
 
+  it("says when the key is the wrong size instead of just 'not set'", async () => {
+    const good = process.env.CERT_ASSETS_KEY;
+    process.env.CERT_ASSETS_KEY = "this-is-32-characters-not-bytes!";
+    const status = await as(request(app).get("/api/v1/certificates/assets"));
+    expect(status.body.keyConfigured).toBe(false);
+    expect(status.body.keyProblem).toBe("invalid");
+    const res = await as(request(app).put("/api/v1/certificates/assets/stamp")).attach("image", pngBuffer(), "s.png");
+    expect(res.status).toBe(503);
+    expect(res.body.message).toMatch(/not valid/);
+    delete process.env.CERT_ASSETS_KEY;
+    expect((await as(request(app).get("/api/v1/certificates/assets"))).body.keyProblem).toBe("missing");
+    process.env.CERT_ASSETS_KEY = good;
+  });
+
+  it("keeps a separate stamp, signature and signatory per programme", async () => {
+    const coreStamp = await as(request(app).put("/api/v1/certificates/assets/" + encodeURIComponent("stamp:Core"))).attach(
+      "image",
+      pngBuffer(),
+      "core.png"
+    );
+    expect(coreStamp.status).toBe(200);
+    expect(coreStamp.body["stamp:Core"].uploaded).toBe(true);
+    expect(coreStamp.body["stamp:Ignite"].uploaded).toBe(false);
+    expect(coreStamp.body.stamp.uploaded).toBe(false); // the default is untouched
+
+    expect(
+      (await as(request(app).put("/api/v1/certificates/assets/" + encodeURIComponent("stamp:Other"))).attach("image", pngBuffer(), "x.png"))
+        .status
+    ).toBe(404);
+
+    const signer = await as(request(app).put("/api/v1/certificates/settings")).send({
+      program: "Ignite",
+      signatoryName: "Ignite Lead",
+      signatoryTitle: "Head of Ignite",
+    });
+    expect(signer.status).toBe(200);
+    expect(signer.body.settings.programs.Ignite.signatoryName).toBe("Ignite Lead");
+    expect(signer.body.settings.signatoryName).toBe("Dr. Jane Doe"); // default unchanged
+    expect(signer.body.settings.programs.Core.signatoryName).toBe("");
+
+    expect(
+      (await as(request(app).put("/api/v1/certificates/settings")).send({ program: "Nope", signatoryName: "x", signatoryTitle: "y" })).status
+    ).toBe(400);
+
+    const sample = await as(request(app).get("/api/v1/certificates/assets/preview/image?program=Ignite"));
+    expect(sample.status).toBe(200);
+
+    expect((await as(request(app).delete("/api/v1/certificates/assets/" + encodeURIComponent("stamp:Core")))).status).toBe(200);
+  });
+
+  it("falls back to the default image and signer when a programme has none of its own", () => {
+    const { resolveFor } = require("../lib/certificateAssets");
+    const loaded = {
+      images: { signature: "DEFSIG", stamp: "DEFSTAMP", "stamp:Core": "CORESTAMP" },
+      settings: {
+        signatoryName: "Default Person",
+        signatoryTitle: "MD",
+        programs: { Core: { signatoryName: "", signatoryTitle: "" }, Ignite: { signatoryName: "Ignite Lead", signatoryTitle: "Head" } },
+      },
+    };
+    const core = resolveFor(loaded, "Core");
+    expect(core.stamp).toBe("CORESTAMP");
+    expect(core.signature).toBe("DEFSIG");
+    expect(core.settings.signatoryName).toBe("Default Person");
+    const ignite = resolveFor(loaded, "Ignite");
+    expect(ignite.stamp).toBe("DEFSTAMP");
+    expect(ignite.settings).toEqual({ signatoryName: "Ignite Lead", signatoryTitle: "Head" });
+    expect(resolveFor({ images: {}, settings: { signatoryName: "", signatoryTitle: "", programs: {} } }, "Core").stamp).toBeNull();
+  });
+
   it("validates the signatory fields", async () => {
     const res = await as(request(app).put("/api/v1/certificates/settings")).send({ signatoryName: "x".repeat(81), signatoryTitle: "" });
     expect(res.status).toBe(400);

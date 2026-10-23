@@ -3,7 +3,7 @@ const Certificate = require("../model/certificateModel");
 const { normalizeCode } = require("../lib/certificateCode");
 const { renderCertificateJpeg, renderCertificatePdf } = require("../lib/certificateRenderer");
 const assets = require("../lib/certificateAssets");
-const { keyIsConfigured } = require("../lib/assetCrypto");
+const { keyIsConfigured, keyProblem } = require("../lib/assetCrypto");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
 
@@ -15,7 +15,7 @@ const isPdf = (req) => req.path.endsWith("/pdf");
 // inside loadRenderAssets and only ever leave this server baked into the result.
 const sendRendered = async (req, res, cert, { pdf: wantsPdf, forceAttachment = false }) => {
   try {
-    const loaded = await assets.loadRenderAssets();
+    const loaded = assets.resolveFor(await assets.loadRenderAssets(), cert.program);
     const body = wantsPdf ? await renderCertificatePdf(cert, loaded) : await renderCertificateJpeg(cert, loaded);
 
     res.set("Content-Type", wantsPdf ? "application/pdf" : "image/jpeg");
@@ -72,7 +72,7 @@ const renderSample = async (req, res) => {
 const getAssetStatus = async (req, res) => {
   try {
     res.set("Cache-Control", "no-store");
-    return res.status(200).json({ success: true, keyConfigured: keyIsConfigured(), ...(await assets.getStatus()) });
+    return res.status(200).json({ success: true, keyConfigured: keyIsConfigured(), keyProblem: keyProblem(), ...(await assets.getStatus()) });
   } catch (error) {
     logger.error("Certificate asset status error", { error });
     return res.status(500).json({ message: "Server Error" });
@@ -83,9 +83,9 @@ const getAssetStatus = async (req, res) => {
 const uploadAsset = async (req, res) => {
   try {
     const { kind } = req.params;
-    if (!assets.KINDS.includes(kind)) return res.status(404).json({ message: "Unknown image type" });
+    if (!assets.isValidKind(kind)) return res.status(404).json({ message: "Unknown image type" });
     if (!keyIsConfigured()) {
-      return res.status(503).json({ message: "Image storage is not set up yet (CERT_ASSETS_KEY is missing on the server)" });
+      return res.status(503).json({ message: keyProblem() === "invalid" ? "Image storage key is not valid: CERT_ASSETS_KEY must be 32 random bytes, base64-encoded" : "Image storage is not set up yet (CERT_ASSETS_KEY is missing on the server)" });
     }
     if (!req.file) return res.status(400).json({ message: "Choose a PNG image to upload" });
 
@@ -113,7 +113,7 @@ const uploadAsset = async (req, res) => {
 const deleteAsset = async (req, res) => {
   try {
     const { kind } = req.params;
-    if (!assets.KINDS.includes(kind)) return res.status(404).json({ message: "Unknown image type" });
+    if (!assets.isValidKind(kind)) return res.status(404).json({ message: "Unknown image type" });
     await assets.removeAsset(kind);
     assets.clearCache();
     await logAudit({
@@ -136,7 +136,7 @@ const updateSettings = async (req, res) => {
     await logAudit({
       action: "UPDATE_CERTIFICATE_ASSETS",
       performedBy: performedBy(req),
-      details: `Set the certificate signatory to "${req.body.signatoryName}"`,
+      details: `Set the ${req.body.program || "default"} certificate signatory to "${req.body.signatoryName}"`,
     });
     return res.status(200).json({ success: true, ...(await assets.getStatus()) });
   } catch (error) {
