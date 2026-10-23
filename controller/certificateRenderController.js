@@ -7,6 +7,12 @@ const { keyIsConfigured, keyProblem } = require("../lib/assetCrypto");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
 
+// What an image is called on screen and in the audit log (stored as "stamp")
+const kindLabel = (kind) => {
+  const [base, program] = kind.split(":");
+  return `${base === "stamp" ? "seal" : base}${program ? ` (${program})` : ""}`;
+};
+
 const performedBy = (req) => ({ id: req.user.id, name: req.user.name, email: req.user.email });
 
 const isPdf = (req) => req.path.endsWith("/pdf");
@@ -110,7 +116,7 @@ const uploadAsset = async (req, res) => {
     await logAudit({
       action: "UPDATE_CERTIFICATE_ASSETS",
       performedBy: performedBy(req),
-      details: `Uploaded the certificate ${kind}`,
+      details: `Uploaded the certificate ${kindLabel(kind)}`,
     });
     return res.status(200).json(await statusPayload());
   } catch (error) {
@@ -129,7 +135,7 @@ const deleteAsset = async (req, res) => {
     await logAudit({
       action: "UPDATE_CERTIFICATE_ASSETS",
       performedBy: performedBy(req),
-      details: `Removed the certificate ${kind}`,
+      details: `Removed the certificate ${kindLabel(kind)}`,
     });
     return res.status(200).json(await statusPayload());
   } catch (error) {
