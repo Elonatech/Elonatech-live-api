@@ -10,6 +10,8 @@ const email = "certificatetester@elonatech.com.ng";
 const password = "TestPass123!";
 const PREFIX = "CertTest ";
 let token;
+let normalToken; // a normal (non-super) admin
+const normalEmail = "certificatenormal@elonatech.com.ng";
 
 const auth = (req) => req.set("x-access-token", token);
 const body = (extra = {}) => ({
@@ -22,15 +24,18 @@ const body = (extra = {}) => ({
 
 beforeAll(async () => {
   await connect();
-  await Admin.deleteMany({ email });
-  await Admin.create({ name: "Cert Tester", email, password: await bcrypt.hash(password, 10), role: "superAdmin" });
+  await Admin.deleteMany({ email: { $in: [email, normalEmail] } });
+  const hashed = await bcrypt.hash(password, 10);
+  await Admin.create({ name: "Cert Tester", email, password: hashed, role: "superAdmin" });
+  await Admin.create({ name: "Cert Normal", email: normalEmail, password: hashed, role: "admin" });
   token = (await request(app).post("/api/v1/auth/login").send({ email, password })).body.access;
+  normalToken = (await request(app).post("/api/v1/auth/login").send({ email: normalEmail, password })).body.access;
   await Certificate.deleteMany({ fullName: new RegExp(`^${PREFIX}`) });
 });
 
 afterAll(async () => {
   await Certificate.deleteMany({ fullName: new RegExp(`^${PREFIX}`) });
-  await Admin.deleteMany({ email });
+  await Admin.deleteMany({ email: { $in: [email, normalEmail] } });
   await disconnect();
 });
 
@@ -75,6 +80,42 @@ describe("admin endpoints need a token", () => {
     expect((await request(app).get("/api/v1/certificates/all")).status).toBe(403);
     expect((await request(app).patch("/api/v1/certificates/abc").send({})).status).toBe(403);
     expect((await request(app).delete("/api/v1/certificates/abc")).status).toBe(403);
+  });
+});
+
+describe("only super admins can manage certificates", () => {
+  const asNormal = (req) => req.set("x-access-token", normalToken);
+
+  it("refuses a normal admin on every admin endpoint", async () => {
+    const made = (await auth(request(app).post("/api/v1/certificates")).send(body({ fullName: `${PREFIX}Guarded` }))).body.data;
+
+    expect((await asNormal(request(app).get("/api/v1/certificates/all"))).status).toBe(403);
+    expect((await asNormal(request(app).post("/api/v1/certificates")).send(body())).status).toBe(403);
+    expect(
+      (await asNormal(request(app).post("/api/v1/certificates/bulk")).send({ certificates: [body()] })).status
+    ).toBe(403);
+    expect((await asNormal(request(app).patch(`/api/v1/certificates/${made._id}`)).send({ status: "revoked" })).status).toBe(403);
+    expect((await asNormal(request(app).delete(`/api/v1/certificates/${made._id}`))).status).toBe(403);
+
+    // and nothing was changed or created behind the 403s
+    const still = await Certificate.findById(made._id);
+    expect(still.status).toBe("valid");
+    expect(await Certificate.countDocuments({ fullName: new RegExp(`^${PREFIX}`), createdAt: { $gte: new Date(Date.now() - 1000 * 60) } })).toBeGreaterThan(0);
+  });
+
+  it("does not let a normal admin create anything", async () => {
+    const before = await Certificate.countDocuments({ fullName: `${PREFIX}NormalTried` });
+    await asNormal(request(app).post("/api/v1/certificates")).send(body({ fullName: `${PREFIX}NormalTried` }));
+    expect(await Certificate.countDocuments({ fullName: `${PREFIX}NormalTried` })).toBe(before);
+  });
+
+  it("still lets a super admin do all of it", async () => {
+    expect((await auth(request(app).get("/api/v1/certificates/all"))).status).toBe(200);
+    expect((await auth(request(app).post("/api/v1/certificates")).send(body({ fullName: `${PREFIX}SuperOk` }))).status).toBe(201);
+  });
+
+  it("keeps the public verify and list open to everyone", async () => {
+    expect((await request(app).get("/api/v1/certificates/public")).status).toBe(200);
   });
 });
 

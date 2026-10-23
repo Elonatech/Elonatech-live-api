@@ -2,7 +2,7 @@ const express = require("express");
 const rateLimit = require("express-rate-limit"); 
 const router = express.Router();
 const certificateController = require("../controller/certificateController");
-const { verifyToken } = require("../middleware/Admin");
+const { verifySuperAdmin } = require("../middleware/Admin");
 const validate = require("../middleware/validate");
 const {
   createCertificateSchema,
@@ -35,11 +35,11 @@ const listLimiter = rateLimit({
 });
 router.get("/public", listLimiter, certificateController.listPublicCertificates);
 
-// Admin
-router.get("/all", verifyToken, certificateController.getAllCertificatesAdmin);
-router.post("/", verifyToken, validate(createCertificateSchema), certificateController.createCertificate);
-router.post("/bulk", verifyToken, validate(bulkCertificateSchema), certificateController.createCertificatesBulk);
-router.patch("/:id", verifyToken, validate(updateCertificateSchema), certificateController.updateCertificate);
-router.delete("/:id", verifyToken, certificateController.deleteCertificate);
+// Admin: certificates are managed by super admins only. A normal admin gets 403 on every one of these.
+router.get("/all", verifySuperAdmin, certificateController.getAllCertificatesAdmin);
+router.post("/", verifySuperAdmin, validate(createCertificateSchema), certificateController.createCertificate);
+router.post("/bulk", verifySuperAdmin, validate(bulkCertificateSchema), certificateController.createCertificatesBulk);
+router.patch("/:id", verifySuperAdmin, validate(updateCertificateSchema), certificateController.updateCertificate);
+router.delete("/:id", verifySuperAdmin, certificateController.deleteCertificate);
 
 module.exports = router;
