@@ -68,11 +68,21 @@ const renderSample = async (req, res) => {
   return sendRendered(req, res, sample, { pdf: isPdf(req) });
 };
 
+// Everything the admin panel shows: what is uploaded (never the images), the
+// signatories, and whether the storage key is usable. Every response that
+// returns the status carries all of it, or the panel would think the key vanished.
+const statusPayload = async () => ({
+  success: true,
+  keyConfigured: keyIsConfigured(),
+  keyProblem: keyProblem(),
+  ...(await assets.getStatus()),
+});
+
 // GET /api/v1/certificates/assets — what is uploaded (never the images)
 const getAssetStatus = async (req, res) => {
   try {
     res.set("Cache-Control", "no-store");
-    return res.status(200).json({ success: true, keyConfigured: keyIsConfigured(), keyProblem: keyProblem(), ...(await assets.getStatus()) });
+    return res.status(200).json(await statusPayload());
   } catch (error) {
     logger.error("Certificate asset status error", { error });
     return res.status(500).json({ message: "Server Error" });
@@ -102,7 +112,7 @@ const uploadAsset = async (req, res) => {
       performedBy: performedBy(req),
       details: `Uploaded the certificate ${kind}`,
     });
-    return res.status(200).json({ success: true, ...(await assets.getStatus()) });
+    return res.status(200).json(await statusPayload());
   } catch (error) {
     logger.error("Upload certificate asset error", { error });
     return res.status(500).json({ message: "Server Error" });
@@ -121,7 +131,7 @@ const deleteAsset = async (req, res) => {
       performedBy: performedBy(req),
       details: `Removed the certificate ${kind}`,
     });
-    return res.status(200).json({ success: true, ...(await assets.getStatus()) });
+    return res.status(200).json(await statusPayload());
   } catch (error) {
     logger.error("Delete certificate asset error", { error });
     return res.status(500).json({ message: "Server Error" });
@@ -138,7 +148,7 @@ const updateSettings = async (req, res) => {
       performedBy: performedBy(req),
       details: `Set the ${req.body.program || "default"} certificate signatory to "${req.body.signatoryName}"`,
     });
-    return res.status(200).json({ success: true, ...(await assets.getStatus()) });
+    return res.status(200).json(await statusPayload());
   } catch (error) {
     logger.error("Update certificate settings error", { error });
     return res.status(500).json({ message: "Server Error" });

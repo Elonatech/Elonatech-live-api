@@ -11,6 +11,9 @@ const { clearCache } = require("../lib/certificateAssets");
 const bcrypt = require("bcryptjs");
 const { generateCode } = require("../lib/certificateCode");
 
+// Drawing a full-size PDF takes a few seconds on a busy machine
+jest.setTimeout(30000);
+
 const email = "certrender@elonatech.com.ng";
 const normalEmail = "certrendernormal@elonatech.com.ng";
 const password = "TestPass123!";
@@ -161,6 +164,9 @@ describe("signature and stamp storage", () => {
     const res = await as(request(app).put("/api/v1/certificates/assets/stamp")).attach("image", original, "stamp.png");
     expect(res.status).toBe(200);
     expect(res.body.stamp.uploaded).toBe(true);
+    // the panel replaces its state with every response, so the key state must come back too
+    expect(res.body.keyConfigured).toBe(true);
+    expect(res.body.keyProblem).toBe("ok");
     expect(JSON.stringify(res.body)).not.toMatch(/iv|tag|"data"/);
 
     const row = await CertificateAsset.findOne({ kind: "stamp" });
