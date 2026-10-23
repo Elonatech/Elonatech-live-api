@@ -43,6 +43,7 @@ const certificateFields = {
   duration: textLine("Duration", 40),
   pathwayLevel: textLine("Pathway level", 80),
   specialization: textLine("Specialization", 120),
+  specialFocus: textLine("Special focus", 120),
 };
 
 const createCertificateSchema = z
@@ -70,6 +71,7 @@ const updateCertificateSchema = z
     duration: textLine("Duration", 40),
     pathwayLevel: textLine("Pathway level", 80),
     specialization: textLine("Specialization", 120),
+    specialFocus: textLine("Special focus", 120),
     status: z.enum(STATUSES, {
       errorMap: () => ({ message: `Status must be one of: ${STATUSES.join(", ")}` }),
     }),
@@ -77,4 +79,17 @@ const updateCertificateSchema = z
   })
   .partial();
 
-module.exports = { createCertificateSchema, bulkCertificateSchema, updateCertificateSchema, PROGRAMS, STATUSES };
+// Who signs: printed under the signature line on every certificate
+const certificateSettingsSchema = z.object({
+  signatoryName: z.string().trim().max(80, "Name must be at most 80 characters"),
+  signatoryTitle: z.string().trim().max(80, "Title must be at most 80 characters"),
+});
+
+module.exports = {
+  createCertificateSchema,
+  bulkCertificateSchema,
+  updateCertificateSchema,
+  certificateSettingsSchema,
+  PROGRAMS,
+  STATUSES,
+};

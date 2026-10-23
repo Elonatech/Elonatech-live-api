@@ -24,7 +24,7 @@ const createWithUniqueCode = async (data) => {
 // POST /api/v1/certificates — issue one certificate (admin)
 const createCertificate = async (req, res) => {
   try {
-    const { fullName, program, completionDate, enrollmentDate, issueDate, duration, pathwayLevel, specialization } = req.body;
+    const { fullName, program, completionDate, enrollmentDate, issueDate, duration, pathwayLevel, specialization, specialFocus } = req.body;
     const certificate = await createWithUniqueCode({
       fullName,
       program,
@@ -34,6 +34,7 @@ const createCertificate = async (req, res) => {
       duration,
       pathwayLevel,
       specialization,
+      specialFocus,
       issuedBy: performedBy(req),
     });
 
@@ -232,6 +233,7 @@ const verifyCertificate = async (req, res) => {
         duration: certificate.duration || "",
         pathwayLevel: certificate.pathwayLevel || "",
         specialization: certificate.specialization || "",
+        specialFocus: certificate.specialFocus || "",
       },
     });
   } catch (error) {

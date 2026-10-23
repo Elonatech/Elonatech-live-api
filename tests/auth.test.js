@@ -61,12 +61,14 @@ describe("Auth — protected routes", () => {
     expect([401, 403]).toContain(res.status);
   });
 
-  it("GET /all rejects normal admin (not superAdmin)", async () => {
+  // Normal admins may view the admin list, but it only ever shows normal admins.
+  it("GET /all lets a normal admin in, showing only normal admins", async () => {
     const loginRes = await request(app).post("/api/v1/auth/login").send({ email, password });
     const res = await request(app)
       .get("/api/v1/auth/all")
       .set("x-access-token", loginRes.body.access);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(res.body.admins.every((a) => a.role === "admin")).toBe(true);
   });
 
   it("POST /verify-admin returns isAdmin: true for valid token", async () => {

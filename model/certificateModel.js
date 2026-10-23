@@ -24,6 +24,9 @@ const certificateSchema = new mongoose.Schema(
     // Ignite certificates carry two more lines; Core ignores them.
     pathwayLevel: { type: String, trim: true },
     specialization: { type: String, trim: true },
+    // Core only: the track the person developed most during the programme
+    // (optional; chosen by the admin, not taken from the application).
+    specialFocus: { type: String, trim: true },
 
     // "revoked" keeps the record (and the printed QR still resolves to a clear
     // "no longer valid" page) instead of silently deleting it.

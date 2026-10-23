@@ -32,9 +32,22 @@ afterAll(async () => {
 });
 
 describe("Admin — GET /all", () => {
-  it("blocks normal admin", async () => {
+  // By design a normal admin can see the other normal admins, but never any
+  // super admin (and so never the master account).
+  it("lets a normal admin see other normal admins only", async () => {
     const res = await request(app).get("/api/v1/auth/all").set("x-access-token", normalToken);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.admins)).toBe(true);
+    expect(res.body.admins.every((a) => a.role === "admin")).toBe(true);
+    const emails = res.body.admins.map((a) => a.email);
+    expect(emails).toContain(normalEmail);
+    expect(emails).not.toContain(superEmail);
+    expect(emails).not.toContain(masterEmail);
+  });
+
+  it("rejects a request with no token", async () => {
+    const res = await request(app).get("/api/v1/auth/all");
+    expect([401, 403]).toContain(res.status);
   });
 
   it("allows super admin and returns admins array", async () => {

@@ -217,6 +217,18 @@ describe("details printed on the certificate", () => {
     expect(edited.body.data.enrollmentDate).toBeDefined(); // a blank date leaves the saved one alone
   });
 
+  it("stores a Core special focus, returns it on verify, and lets an edit clear it", async () => {
+    const made = (await create({ program: "Core", specialFocus: " Data Analytics & Business Intelligence " })).body.data;
+    expect(made.specialFocus).toBe("Data Analytics & Business Intelligence"); // trimmed
+
+    const verify = await request(app).get(`/api/v1/certificates/verify/${made.code}`);
+    expect(verify.body.certificate.specialFocus).toBe("Data Analytics & Business Intelligence");
+
+    const cleared = await auth(request(app).patch(`/api/v1/certificates/${made._id}`)).send({ specialFocus: "" });
+    expect(cleared.body.data.specialFocus).toBe("");
+    expect((await create({ program: "Core", specialFocus: "x".repeat(121) })).status).toBe(400);
+  });
+
   it("accepts the new columns in a bulk request", async () => {
     const res = await auth(request(app).post("/api/v1/certificates/bulk")).send({
       certificates: [{ fullName: `${PREFIX}Bulk Detail`, program: "Ignite", completionDate: "2026-09-30", duration: "6 months", pathwayLevel: "Beginner", specialization: "Cyber" }],
@@ -359,6 +371,7 @@ describe("public verification", () => {
       duration: "",
       pathwayLevel: "",
       specialization: "",
+      specialFocus: "",
     });
     expect(JSON.stringify(res.body)).not.toMatch(/issuedBy|_id|certificatetester/);
     expect(res.headers["cache-control"]).toBe("no-store");
