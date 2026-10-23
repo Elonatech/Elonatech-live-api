@@ -1,5 +1,5 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
+const rateLimit = require("express-rate-limit"); 
 const router = express.Router();
 const certificateController = require("../controller/certificateController");
 const { verifyToken } = require("../middleware/Admin");
