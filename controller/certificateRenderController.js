@@ -5,6 +5,7 @@ const { renderCertificateJpeg, renderCertificatePdf } = require("../lib/certific
 const assets = require("../lib/certificateAssets");
 const { keyIsConfigured, keyProblem } = require("../lib/assetCrypto");
 const logger = require("../lib/logger");
+const { PROGRAMS, programInfo } = require("../lib/certificatePrograms");
 const logAudit = require("../lib/logAudit");
 
 // What an image is called on screen and in the audit log (stored as "stamp")
@@ -29,7 +30,7 @@ const sendRendered = async (req, res, cert, { pdf: wantsPdf, forceAttachment = f
     res.set("Cache-Control", "no-store");
     if (wantsPdf) {
       const download = forceAttachment || req.query.download === "1";
-      res.set("Content-Disposition", `${download ? "attachment" : "inline"}; filename="ETMPDP-${cert.program}-Certificate-${cert.code}.pdf"`);
+      res.set("Content-Disposition", `${download ? "attachment" : "inline"}; filename="${programInfo(cert.program).fileName}-Certificate-${cert.code}.pdf"`);
     }
     return res.status(200).send(body);
   } catch (error) {
@@ -59,17 +60,20 @@ const renderAdmin = async (req, res) => {
 // GET /api/v1/certificates/assets/preview?program= — a made-up certificate drawn
 // with whatever is currently uploaded, so the admin can check how it looks.
 const renderSample = async (req, res) => {
-  const program = req.query.program === "Ignite" ? "Ignite" : "Core";
+  const program = PROGRAMS.includes(req.query.program) ? req.query.program : "Core";
+  const isCompTia = programInfo(program).prefix === "COMPTIA";
   const sample = {
     fullName: "Sample Recipient",
     program,
-    code: "ETMPDP-SAMPLE00-00",
+    code: `${programInfo(program).prefix}-SAMPLE00-00`,
     enrollmentDate: new Date("2026-01-12"),
     completionDate: new Date("2026-07-10"),
     issueDate: new Date(),
-    ...(program === "Ignite"
-      ? { pathwayLevel: "Ignite Professional", duration: "4 months", specialization: "Software Engineering" }
-      : { specialFocus: "Software Engineering" }),
+    ...(isCompTia
+      ? { duration: "8 weeks" }
+      : program === "Ignite"
+        ? { pathwayLevel: "Ignite Professional", duration: "4 months", specialization: "Software Engineering" }
+        : { specialFocus: "Software Engineering" }),
   };
   return sendRendered(req, res, sample, { pdf: isPdf(req) });
 };

@@ -1,18 +1,19 @@
 const mongoose = require("mongoose");
+const { PROGRAMS } = require("../lib/certificatePrograms");
 
-// One record per ETMPDP certificate. The public verify page looks a
+// One record per certificate (ETMPDP Core / Ignite, CompTIA Network+ / A+). The public verify page looks a
 // certificate up by `code` only; nothing here is ever exposed except the
 // fields the controller chooses to return.
 const certificateSchema = new mongoose.Schema(
   {
-    // ETMPDP-XXXXXXXX-CC — generated server-side, never changes once issued,
+    // ETMPDP-XXXXXXXX-CC (COMPTIA-… for the CompTIA courses) — generated server-side, never changes once issued,
     // because it is printed on the certificate (inside the QR code).
     code: { type: String, required: true, unique: true, index: true },
 
     fullName: { type: String, required: true, trim: true },
 
-    // The two certificate designs: Core and Ignite.
-    program: { type: String, enum: ["Core", "Ignite"], required: true },
+    // Which programme: see lib/certificatePrograms.js
+    program: { type: String, enum: PROGRAMS, required: true },
 
     enrollmentDate: { type: Date },
     completionDate: { type: Date, required: true },

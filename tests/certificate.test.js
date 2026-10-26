@@ -296,7 +296,7 @@ describe("public list (unlisted page)", () => {
   it("reports headline counts that ignore the search and exclude revoked", async () => {
     const all = (await request(app).get("/api/v1/certificates/public")).body.counts;
     const searched = (await list()).body.counts;
-    expect(all.all).toBe(all.Core + all.Ignite);
+    expect(all.all).toBe(all.Core + all.Ignite + all.NetworkPlus + all.APlus);
     expect(searched).toEqual(all); // a search doesn't change the headline numbers
 
     // a certificate of its own, so the other tests in this block are untouched
@@ -417,5 +417,45 @@ describe("public verification", () => {
     expect((await auth(request(app).delete(`/api/v1/certificates/${cert._id}`))).status).toBe(200);
     expect((await request(app).get(`/api/v1/certificates/verify/${cert.code}`)).status).toBe(404);
     expect((await auth(request(app).delete(`/api/v1/certificates/${cert._id}`))).status).toBe(404);
+  });
+});
+
+describe("CompTIA certificates", () => {
+  const make = (program, extra = {}) =>
+    auth(request(app).post("/api/v1/certificates")).send(body({ program, duration: "8 weeks", ...extra }));
+
+  it("issues Network+ and A+ certificates with a COMPTIA- code that verifies", async () => {
+    for (const program of ["NetworkPlus", "APlus"]) {
+      const res = await make(program);
+      expect(res.status).toBe(201);
+      expect(res.body.data.program).toBe(program);
+      expect(res.body.data.code).toMatch(/^COMPTIA-/);
+      expect(normalizeCode(res.body.data.code.toLowerCase())).toBe(res.body.data.code);
+
+      const verify = await request(app).get(`/api/v1/certificates/verify/${res.body.data.code}`);
+      expect(verify.status).toBe(200);
+      expect(verify.body.certificate.program).toBe(program);
+      expect(verify.body.certificate.duration).toBe("8 weeks");
+    }
+  });
+
+  it("keeps the ETMPDP prefix for Core and Ignite, and refuses an unknown programme", async () => {
+    expect(generateCode("Core")).toMatch(/^ETMPDP-/);
+    expect(generateCode("Ignite")).toMatch(/^ETMPDP-/);
+    expect(generateCode("APlus")).toMatch(/^COMPTIA-/);
+    expect(normalizeCode("COMPTIA-AAAAAAAA-AA")).toBeNull(); // wrong check characters
+    expect((await make("Security+")).status).toBe(400);
+  });
+
+  it("filters the lists by the new programmes and counts them", async () => {
+    const mine = await make("NetworkPlus", { fullName: `${PREFIX}Net Person` });
+    expect(mine.status).toBe(201);
+    const admin = await auth(request(app).get("/api/v1/certificates/all?program=NetworkPlus&limit=100"));
+    expect(admin.body.certificates.length).toBeGreaterThan(0);
+    expect(admin.body.certificates.every((c) => c.program === "NetworkPlus")).toBe(true);
+    const pub = await request(app).get("/api/v1/certificates/public?program=NetworkPlus&limit=50");
+    expect(pub.body.certificates.every((c) => c.program === "NetworkPlus")).toBe(true);
+    expect(pub.body.counts.NetworkPlus).toBeGreaterThan(0);
+    expect(pub.body.counts).toHaveProperty("APlus");
   });
 });

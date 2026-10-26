@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const PROGRAMS = ["Core", "Ignite"];
+const { PROGRAMS } = require("../lib/certificatePrograms");
 const STATUSES = ["valid", "revoked"];
 
 const nameField = z

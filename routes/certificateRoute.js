@@ -26,7 +26,7 @@ const verifyLimiter = rateLimit({
 // Public — what the QR code on a certificate opens
 router.get("/verify/:code", verifyLimiter, certificateController.verifyCertificate);
 
-// Public list behind the unlisted /etmpdp-certificates page (hidden, not
+// Public list behind the unlisted /training-certificates page (hidden, not
 // password-protected). Searching and paging make more requests than a single
 // verify, so it gets a higher cap of its own.
 const listLimiter = rateLimit({

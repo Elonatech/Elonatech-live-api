@@ -239,6 +239,34 @@ describe("signature and stamp storage", () => {
     process.env.CERT_ASSETS_KEY = good;
   });
 
+  it("draws CompTIA certificates and names their PDFs after the programme", async () => {
+    const made = await Certificate.create({
+      code: generateCode("NetworkPlus"),
+      fullName: `${PREFIX}Net Person`,
+      program: "NetworkPlus",
+      completionDate: new Date("2026-09-01"),
+      duration: "8 weeks",
+      issuedBy: { name: "t" },
+    });
+    const pdf = await request(app).get(`/api/v1/certificates/render/${made.code}/pdf?download=1`).buffer(true).parse((r, cb) => {
+      const chunks = [];
+      r.on("data", (c) => chunks.push(c));
+      r.on("end", () => cb(null, Buffer.concat(chunks)));
+    });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers["content-disposition"]).toBe(`attachment; filename="CompTIA-Network-Plus-Certificate-${made.code}.pdf"`);
+    expect(pdf.body.subarray(0, 5).toString()).toBe("%PDF-");
+    for (const program of ["NetworkPlus", "APlus"]) {
+      const sample = await as(request(app).get(`/api/v1/certificates/assets/preview/image?program=${program}`));
+      expect(sample.status).toBe(200);
+    }
+    const kind = encodeURIComponent("stamp:APlus");
+    const up = await as(request(app).put(`/api/v1/certificates/assets/${kind}`)).attach("image", pngBuffer(), "a.png");
+    expect(up.status).toBe(200);
+    expect(up.body["stamp:APlus"].uploaded).toBe(true);
+    await as(request(app).delete(`/api/v1/certificates/assets/${kind}`));
+  });
+
   it("keeps a separate stamp, signature and signatory per programme", async () => {
     const coreStamp = await as(request(app).put("/api/v1/certificates/assets/" + encodeURIComponent("stamp:Core"))).attach(
       "image",

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Certificate = require("../model/certificateModel");
 const { generateCode, normalizeCode } = require("../lib/certificateCode");
+const { PROGRAMS } = require("../lib/certificatePrograms");
 const logger = require("../lib/logger");
 const logAudit = require("../lib/logAudit");
 
@@ -13,7 +14,7 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const createWithUniqueCode = async (data) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      return await Certificate.create({ ...data, code: generateCode() });
+      return await Certificate.create({ ...data, code: generateCode(data.program) });
     } catch (error) {
       if (error.code !== 11000) throw error;
     }
@@ -93,7 +94,7 @@ const SORTABLE = ["createdAt", "fullName", "completionDate", "program", "status"
 const getAllCertificatesAdmin = async (req, res) => {
   try {
     const filter = {};
-    if (["Core", "Ignite"].includes(req.query.program)) filter.program = req.query.program;
+    if (PROGRAMS.includes(req.query.program)) filter.program = req.query.program;
     if (["valid", "revoked"].includes(req.query.status)) filter.status = req.query.status;
 
     const q = String(req.query.q || "").trim().slice(0, 100);
@@ -252,7 +253,7 @@ const listPublicCertificates = async (req, res) => {
   res.set("Cache-Control", "no-store");
   try {
     const filter = { status: "valid" };
-    if (["Core", "Ignite"].includes(req.query.program)) filter.program = req.query.program;
+    if (PROGRAMS.includes(req.query.program)) filter.program = req.query.program;
 
     const q = String(req.query.q || "").trim().slice(0, 100);
     if (q) {
@@ -278,11 +279,11 @@ const listPublicCertificates = async (req, res) => {
       ]),
     ]);
 
-    const counts = { Core: 0, Ignite: 0 };
+    const counts = Object.fromEntries(PROGRAMS.map((p) => [p, 0]));
     byProgram.forEach(({ _id, count }) => {
       if (_id in counts) counts[_id] = count;
     });
-    counts.all = counts.Core + counts.Ignite;
+    counts.all = PROGRAMS.reduce((sum, p) => sum + counts[p], 0);
 
     return res.status(200).json({
       success: true,
