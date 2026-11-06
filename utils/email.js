@@ -310,8 +310,13 @@ const jobEmail = async (req, res) => {
     let application;
     try {
       const job = await Job.findById(jobId);
-      if (!job) {
+      // A Draft is not published, so nobody can apply to it (same answer as a job that does not exist)
+      if (!job || job.status === "Draft") {
         return res.status(404).json({ message: "That job posting no longer exists" });
+      }
+      // Closed jobs stay viewable but no longer take applications
+      if (job.status === "Closed") {
+        return res.status(400).json({ message: "This position is closed and is no longer accepting applications" });
       }
 
       const cv_url = await uploadBufferToCloudinary(file.buffer, "job-applications");

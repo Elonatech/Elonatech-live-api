@@ -163,7 +163,10 @@ const getActiveJobs = async (req, res) => {
   }
 };
 
-// GET /api/v1/jobs/:id — single job by id or slug
+// GET /api/v1/jobs/:id — single job by id or slug. PUBLIC, so a Draft is treated
+// as if it does not exist: drafts are previewed inside the admin, and a link to
+// an unpublished job must not open for anyone who happens to have it. Closed
+// jobs still open (the page tells visitors the position may have been filled).
 const getJobById = async (req, res) => {
   try {
     const identifier = req.params.id;
@@ -171,7 +174,7 @@ const getJobById = async (req, res) => {
       ? await Job.findById(identifier)
       : await Job.findOne({ slug: identifier });
 
-    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (!job || job.status === "Draft") return res.status(404).json({ message: "Job not found" });
     return res.status(200).json({ success: true, job });
   } catch (error) {
     logger.error("Get job by id error", { error });
